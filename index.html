@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+  <title>Hamster Kombat Web Clicker</title>
+  <!-- Подключаем файлы стилей бэкенда и фронтенда -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Официальный скрипт Telegram для Mini Apps -->
+  <script src="https://telegram.org"></script>
+</head>
+<body>
+
+  <div class="game-wrapper">
+    
+    <!-- ==========================================
+         БЛОК 1: ВЕРХНЯЯ ПАНЕЛЬ СТАТИСТИКИ (HEADER)
+         ========================================== -->
+    <div class="stats-header">
+      <div class="stat-box">
+        <span class="stat-label">Доход за клик</span>
+        <span class="stat-value" id="tap-profit-display">+1</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">Прибыль в час</span>
+        <span class="stat-value" id="profit-display">0</span>
+      </div>
+    </div>
+
+    <!-- Общий баланс монет игрока -->
+    <div class="balance-container">
+      <div class="coin-icon">🪙</div>
+      <div class="balance-amount" id="balance-display">0</div>
+    </div>
+
+    <!-- ==========================================
+         БЛОК 2: СИСТЕМА ЛИГ И РАНГОВ
+         ========================================== -->
+    <div class="rank-container">
+      <div class="rank-header">
+        <span id="rank-name">Bronze Hamster</span>
+        <span id="rank-level">Уровень 1/5</span>
+      </div>
+      <div class="rank-progress-bg">
+        <div id="rank-progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         БЛОК 3: ГЛАВНЫЙ ПЕРСОНАЖ ДЛЯ КЛИКОВ (ТАПОВ)
+         ========================================== -->
+    <div class="character-container">
+      <div class="character-circle" onclick="handleTap(event)">
+        <img id="character-img" src="images/level1.png" alt="Character">
+      </div>
+    </div>
+
+    <!-- Шкала текущей энергии игрока -->
+    <div class="energy-container">
+      <div class="energy-text">
+        ⚡ <span id="current-energy">1000</span> / <span id="max-energy">1000</span>
+      </div>
+      <div class="energy-bar-bg">
+        <div id="energy-bar-fill" style="width: 100%;"></div>
+      </div>
+    </div>
+    <!-- ==========================================
+         БЛОК 4: ЕЖЕДНЕВНЫЕ НАГРАДЫ (СТРИКИ)
+         ========================================== -->
+    <div class="daily-rewards-container">
+      <h3>Ежедневная награда</h3>
+      <p class="section-desc">Заходи в игру каждый день без пропусков, чтобы забрать главный приз!</p>
+      
+      <!-- Контейнер для 10 дней наград (заполняется из JS) -->
+      <div id="rewards-grid" class="rewards-grid"></div>
+      
+      <button id="claim-daily-btn" class="claim-btn" disabled>Забрать награду</button>
+    </div>
+
+    <!-- ==========================================
+         БЛОК 5: ШАХТА (МАГАЗИН КАРТОЧЕК УЛУЧШЕНИЙ)
+         ========================================== -->
+    <div class="mine-section">
+      <h3 class="section-title">Прокачка и улучшения 📊</h3>
+      <!-- Сетка карточек, которая динамически наполняется из JavaScript -->
+      <div id="cards-container" class="cards-grid"></div>
+    </div>
+
+    <!-- ==========================================
+         БЛОК 6: РЕФЕРАЛЬНАЯ СИСТЕМА (ПРИГЛАСИ ДРУГА)
+         ========================================== -->
+    <div class="referral-container">
+      <h3>Пригласи друзей и получи монеты!</h3>
+      <p class="section-desc">За каждого приглашенного друга вы оба получите бонусы</p>
+      <div class="gift-bonus">🎁 <b>+5,000 монет</b> вам и вашему другу</div>
+      
+      <div class="buttons-row">
+        <button id="invite-btn" class="action-btn">Пригласить друга 👥</button>
+        <button id="copy-btn" class="action-btn secondary">Скопировать 📋</button>
+      </div>
+
+      <h4>Список ваших рефералов (<span id="ref-count">0</span>):</h4>
+      <!-- Список имен друзей, подгружаемый из MongoDB -->
+      <ul id="referrals-list"></ul>
+    </div>
+
+  </div> <!-- Конец game-wrapper -->
+
+  <!-- Подключаем файл с объединенной логикой JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
