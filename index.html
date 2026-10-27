@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
-  <title>Hamster Kombat Web Clicker</title>
-  <!-- Подключаем файлы стилей бэкенда и фронтенда -->
+  <title>Tap Game — Bee Hive Clicker</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Официальный скрипт Telegram для Mini Apps -->
+  <!-- Официальный скрипт Telegram WebApp API -->
   <script src="https://telegram.org"></script>
 </head>
 <body>
@@ -14,31 +13,31 @@
   <div class="game-wrapper">
     
     <!-- ==========================================
-         БЛОК 1: ВЕРХНЯЯ ПАНЕЛЬ СТАТИСТИКИ (HEADER)
+         БЛОК 1: СТАТИСТИКА ДОХОДА УЛЬЯ (HEADER)
          ========================================== -->
     <div class="stats-header">
       <div class="stat-box">
-        <span class="stat-label">Доход за клик</span>
+        <span class="stat-label">Сбор за тап</span>
         <span class="stat-value" id="tap-profit-display">+1</span>
       </div>
       <div class="stat-box">
-        <span class="stat-label">Прибыль в час</span>
+        <span class="stat-label">Прибыль улья в час</span>
         <span class="stat-value" id="profit-display">0</span>
       </div>
     </div>
 
-    <!-- Общий баланс монет игрока -->
+    <!-- Общий баланс накопленного мёда игрока -->
     <div class="balance-container">
-      <div class="coin-icon">🪙</div>
+      <div class="coin-icon">🍯</div>
       <div class="balance-amount" id="balance-display">0</div>
     </div>
 
     <!-- ==========================================
-         БЛОК 2: СИСТЕМА ЛИГ И РАНГОВ
+         БЛОК 2: РАНГИ ЭВОЛЮЦИИ ПЧЁЛЫ
          ========================================== -->
     <div class="rank-container">
       <div class="rank-header">
-        <span id="rank-name">Bronze Hamster</span>
+        <span id="rank-name">Новорожденная Личинка</span>
         <span id="rank-level">Уровень 1/5</span>
       </div>
       <div class="rank-progress-bg">
@@ -47,15 +46,15 @@
     </div>
 
     <!-- ==========================================
-         БЛОК 3: ГЛАВНЫЙ ПЕРСОНАЖ ДЛЯ КЛИКОВ (ТАПОВ)
+         БЛОК 3: ИНТЕРАКТИВНАЯ ПЧЕЛА ДЛЯ ТАПОВ
          ========================================== -->
     <div class="character-container">
       <div class="character-circle" onclick="handleTap(event)">
-        <img id="character-img" src="images/level1.png" alt="Character">
+        <img id="character-img" src="images/bee_level1.png" alt="Bee Character">
       </div>
     </div>
 
-    <!-- Шкала текущей энергии игрока -->
+    <!-- Шкала энергии пчелы -->
     <div class="energy-container">
       <div class="energy-text">
         ⚡ <span id="current-energy">1000</span> / <span id="max-energy">1000</span>
@@ -64,49 +63,346 @@
         <div id="energy-bar-fill" style="width: 100%;"></div>
       </div>
     </div>
+
     <!-- ==========================================
-         БЛОК 4: ЕЖЕДНЕВНЫЕ НАГРАДЫ (СТРИКИ)
+         БЛОК 4: ЕЖЕДНЕВНЫЙ СБОР НЕКТАРА (СТРИКИ)
          ========================================== -->
     <div class="daily-rewards-container">
-      <h3>Ежедневная награда</h3>
-      <p class="section-desc">Заходи в игру каждый день без пропусков, чтобы забрать главный приз!</p>
-      
-      <!-- Контейнер для 10 дней наград (заполняется из JS) -->
+      <h3>Ежедневный сбор нектара</h3>
+      <p class="section-desc">Залетайте в улей каждый день без пропусков, чтобы вырастить Королеву!</p>
       <div id="rewards-grid" class="rewards-grid"></div>
-      
-      <button id="claim-daily-btn" class="claim-btn" disabled>Забрать награду</button>
+      <button id="claim-daily-btn" class="claim-btn" disabled>Собрать нектар! 💰</button>
     </div>
 
     <!-- ==========================================
-         БЛОК 5: ШАХТА (МАГАЗИН КАРТОЧЕК УЛУЧШЕНИЙ)
+         БЛОК 5: ШАХТА ПРОКАЧКИ И УЛУЧШЕНИЙ УЛЬЯ
          ========================================== -->
     <div class="mine-section">
-      <h3 class="section-title">Прокачка и улучшения 📊</h3>
-      <!-- Сетка карточек, которая динамически наполняется из JavaScript -->
+      <h3 class="section-title">Развитие сот иBox улучшения улья 📊</h3>
       <div id="cards-container" class="cards-grid"></div>
     </div>
 
     <!-- ==========================================
-         БЛОК 6: РЕФЕРАЛЬНАЯ СИСТЕМА (ПРИГЛАСИ ДРУГА)
+         БЛОК 6: ПЧЕЛИНАЯ РЕФЕРАЛЬНАЯ СИСТЕМА
          ========================================== -->
     <div class="referral-container">
-      <h3>Пригласи друзей и получи монеты!</h3>
-      <p class="section-desc">За каждого приглашенного друга вы оба получите бонусы</p>
-      <div class="gift-bonus">🎁 <b>+5,000 монет</b> вам и вашему другу</div>
+      <h3>Зови друзей в рой и получай мёд!</h3>
+      <p class="section-desc">За каждого приглашенного друга вы оба получите сладкие бонусы</p>
+      <div class="gift-bonus">🎁 <b>+5,000 монет</b> вам и вашей дружественной пчеле</div>
       
       <div class="buttons-row">
-        <button id="invite-btn" class="action-btn">Пригласить друга 👥</button>
-        <button id="copy-btn" class="action-btn secondary">Скопировать 📋</button>
+        <button id="invite-btn" class="action-btn">Пригласить пчелу 👥</button>
+        <button id="copy-btn" class="action-btn secondary">Скопировать инвайт 📋</button>
       </div>
 
-      <h4>Список ваших рефералов (<span id="ref-count">0</span>):</h4>
-      <!-- Список имен друзей, подгружаемый из MongoDB -->
+      <h4>Приглашенные пчёлы (<span id="ref-count">0</span>):</h4>
       <ul id="referrals-list"></ul>
     </div>
 
   </div> <!-- Конец game-wrapper -->
+  <!-- ==========================================
+       ИГРОВАЯ ЛОГИКА (ВСТРОЕННЫЙ APP.JS) — ЧАСТЬ 1
+       ========================================== -->
+  <script>
+    // Глобальное состояние игры на клиенте
+    let gameState = {
+      energy: 1000,
+      maxEnergy: 1000,
+      energyRecoveryRate: 3, 
+      multitapLevel: 1,      
+      balance: 0
+    };
 
-  <!-- Подключаем файл с объединенной логикой JavaScript -->
-  <script src="app.js"></script>
+    const upgradeCards = [
+      { id: "ceo_card", name: "Нанять СЕО Пчелу", basePrice: 100, baseProfit: 10, icon: "🐝" },
+      { id: "marketing_card", name: "Реклама улья в Telegram", basePrice: 500, baseProfit: 45, icon: "📣" },
+      { id: "crypto_card", name: "Листинг нектара на бирже", basePrice: 2000, baseProfit: 200, icon: "🪙" }
+    ];
+
+    const DAILY_REWARDS_CONFIG = {
+      1: 500, 2: 1000, 3: 2500, 4: 5000, 5: 15000, 
+      6: 25000, 7: 100000, 8: 500000, 9: 1000000, 10: 5000000
+    };
+
+    const LEVLES_CONFIG = [
+      { level: 1, name: "Новорожденная Личинка", minCoins: 0, image: "images/bee_level1.png" },
+      { level: 2, name: "Пчела-Рабочий", minCoins: 5000, image: "images/bee_level2.png" },
+      { level: 3, name: "Пчела-Сборщик нектара", minCoins: 25000, image: "images/bee_level3.png" },
+      { level: 4, name: "Охранник Улья", minCoins: 100000, image: "images/bee_level4.png" },
+      { level: 5, name: "Королева Матка (CEO)", minCoins: 1000000, image: "images/bee_level5.png" }
+    ];
+
+    function getTelegramUserData() {
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe?.user) {
+        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        return {
+          telegramId: tgUser.id.toString(),
+          username: tgUser.username || tgUser.first_name || "Игрок"
+        };
+      }
+      return { telegramId: "123456789", username: "Test_Bee" };
+    }
+
+    const activeUser = getTelegramUserData();
+
+    // Автоматическая стартовая синхронизация
+    async function initAndSyncGame() {
+      try {
+        console.log("🔄 Синхронизация профиля в Tap Game:", activeUser.telegramId);
+        const response = await fetch('https://onrender.com', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegramId: activeUser.telegramId })
+        });
+        const data = await response.json();
+        if (data.success && data.user) {
+          applyServerData(data.user);
+        } else {
+          console.error("❌ Ошибка авторизации в Tap Game:", data.error);
+        }
+      } catch (error) {
+        console.error("🌐 Ошибка сети сервера при запуске:", error);
+      }
+    }
+
+    // Буфер накопления тапов для античита
+    let clickQueue = { pendingClicks: 0, isSending: false, syncInterval: 10000 };
+
+    function updateEnergyUI() {
+      document.getElementById('current-energy').innerText = Math.floor(gameState.energy);
+      document.getElementById('max-energy').innerText = gameState.maxEnergy;
+      const percentage = (gameState.energy / gameState.maxEnergy) * 100;
+      document.getElementById('energy-bar-fill').style.width = `${percentage}%`;
+    }
+
+    // Регенерация энергии пчелы (+3 ед/сек)
+    setInterval(() => {
+      if (gameState.energy < gameState.maxEnergy) {
+        gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + gameState.energyRecoveryRate);
+        updateEnergyUI();
+      }
+    }, 1000);
+
+    // Обработка локального нажатия
+    function handleTap(event) {
+      const cost = gameState.multitapLevel;
+      if (gameState.energy >= cost) {
+        gameState.energy -= cost;
+        gameState.balance += cost;
+        updateEnergyUI();
+        document.getElementById('balance-display').innerText = gameState.balance;
+        clickQueue.pendingClicks += 1;
+      } else {
+        alert("Ваша пчела устала! Подождите восстановления энергии ⚡");
+      }
+    }
+
+    // Пакетная отправка кликов на бэкенд по таймеру
+    setInterval(async () => {
+      if (clickQueue.pendingClicks === 0 || clickQueue.isSending) return;
+      const clicksToSend = clickQueue.pendingClicks;
+      clickQueue.pendingClicks = 0;
+      clickQueue.isSending = true;
+
+      try {
+        const response = await fetch('https://onrender.com', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegramId: activeUser.telegramId, clicksCount: clicksToSend })
+        });
+        const data = await response.json();
+        if (data.success) {
+          gameState.balance = data.balance;
+          gameState.energy = data.energy;
+          document.getElementById('balance-display').innerText = gameState.balance;
+          updateEnergyUI();
+          updatePlayerRank(data.totalEarned);
+        } else {
+          clickQueue.pendingClicks += clicksToSend;
+        }
+      } catch (error) {
+        clickQueue.pendingClicks += clicksToSend;
+      } finally {
+        clickQueue.isSending = false;
+      }
+    }, clickQueue.syncInterval);
+    // =========================================================================
+    // ИГРОВАЯ ЛОГИКА (ВСТРОЕННЫЙ APP.JS) — ЧАСТЬ 2
+    // =========================================================================
+
+    function applyServerData(serverUser) {
+      const oldBalance = gameState.balance;
+      gameState.balance = serverUser.balance;
+      gameState.energy = serverUser.energy;
+      gameState.maxEnergy = serverUser.maxEnergy;
+      gameState.multitapLevel = serverUser.multitapLevel;
+
+      document.getElementById('balance-display').innerText = gameState.balance;
+      document.getElementById('profit-display').innerText = serverUser.profitPerHour;
+      document.getElementById('tap-profit-display').innerText = `+${gameState.multitapLevel}`;
+
+      updateEnergyUI();
+      updatePlayerRank(serverUser.totalEarned);
+      renderCards(serverUser.purchasedCards);
+      renderReferrals(serverUser.referrals);
+
+      const isClaimedToday = serverUser.lastDailyClaim ? 
+        new Date(serverUser.lastDailyClaim).toDateString() === new Date().toDateString() : false;
+      renderDailyRewardsCalendar(serverUser.dailyStreak, isClaimedToday);
+
+      const earnedOffline = gameState.balance - oldBalance;
+      if (earnedOffline > 0 && oldBalance > 0) {
+        setTimeout(() => {
+          alert(`🐝 С возвращением в Tap Game!\nПока вас не было, рой принес вам: +${earnedOffline} меда! 🍯`);
+        }, 1000);
+      }
+      
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+      }
+    }
+
+    function renderCards(userPurchasedCards) {
+      const container = document.getElementById('cards-container');
+      container.innerHTML = '';
+      upgradeCards.forEach(card => {
+        const userCard = userPurchasedCards.find(c => c.cardId === card.id);
+        const currentLevel = userCard ? userCard.level : 0;
+        const currentPrice = Math.floor(card.basePrice * Math.pow(1.5, currentLevel));
+        const nextProfit = Math.floor(card.baseProfit * Math.pow(1.2, currentLevel));
+
+        const cardElement = document.createElement('div');
+        cardElement.className = `card-item ${gameState.balance < currentPrice ? 'disabled' : ''}`;
+        cardElement.innerHTML = `
+          <div class="card-icon">${card.icon}</div>
+          <div class="card-title">${card.name}</div>
+          <div class="card-level">Ур. ${currentLevel}</div>
+          <div class="card-profit">📊 +${nextProfit}/час</div>
+          <button class="buy-btn" onclick="buyCard('${card.id}', ${currentPrice})" ${gameState.balance < currentPrice ? 'disabled' : ''}>
+            💰 ${currentPrice}
+          </button>
+        `;
+        container.appendChild(cardElement);
+      });
+    }
+
+    async function buyCard(cardId, price) {
+      if (gameState.balance < price) return alert("Не хватает меда!");
+      gameState.balance -= price;
+      document.getElementById('balance-display').innerText = gameState.balance;
+
+      const response = await fetch('https://onrender.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramId: activeUser.telegramId, cardId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        gameState.balance = data.user.balance;
+        renderCards(data.user.purchasedCards);
+        document.getElementById('profit-display').innerText = data.user.profitPerHour;
+      }
+    }
+
+    // Динамическая реферальная ссылка на вашего пчелиного бота
+    const refLink = `https://t.me{activeUser.telegramId}`;
+
+    document.getElementById('invite-btn').addEventListener('click', () => {
+      const shareText = `🚀 Начни собирать нектар в Tap Game вместе со мной! Качай пчелу и забирай бонус 5,000 монет!`;
+      const tgShareUrl = `https://t.me{encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`;
+      if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.openTelegramLink(tgShareUrl);
+      else window.open(tgShareUrl, '_blank');
+    });
+
+    document.getElementById('copy-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(refLink).then(() => alert("Реферальная ссылка скопирована!"));
+    });
+
+    function renderReferrals(referralsArray) {
+      document.getElementById('ref-count').innerText = referralsArray.length;
+      const list = document.getElementById('referrals-list');
+      list.innerHTML = '';
+      referralsArray.forEach(ref => {
+        const li = document.createElement('li');
+        li.innerText = `👤 ${ref.username || 'Друг'} (Принес +5,000)`;
+        list.appendChild(li);
+      });
+    }
+
+    function updatePlayerRank(totalEarned) {
+      let currentRank = LEVLES_CONFIG[0];
+      let nextRank = LEVLES_CONFIG[1];
+      for (let i = 0; i < LEVLES_CONFIG.length; i++) {
+        if (totalEarned >= LEVLES_CONFIG[i].minCoins) {
+          currentRank = LEVLES_CONFIG[i];
+          nextRank = LEVLES_CONFIG[i + 1] || null;
+        } else { break; }
+      }
+      document.getElementById('rank-name').innerText = currentRank.name;
+      document.getElementById('rank-level').innerText = `Уровень ${currentRank.level}/5`;
+      const charImg = document.getElementById('character-img');
+      if (charImg.getAttribute('src') !== currentRank.image) {
+        charImg.src = currentRank.image;
+      }
+      const progressFill = document.getElementById('rank-progress-fill');
+      if (nextRank) {
+        const coinsInCurrentLevel = totalEarned - currentRank.minCoins;
+        const coinsRequiredForNextLevel = nextRank.minCoins - currentRank.minCoins;
+        const percentage = (coinsInCurrentLevel / coinsRequiredForNextLevel) * 100;
+        progressFill.style.width = `${Math.min(percentage, 100)}%`;
+      } else {
+        progressFill.style.width = "100%";
+        document.getElementById('rank-level').innerText = `Макс. уровень 🎉`;
+      }
+    }
+
+    function renderDailyRewardsCalendar(userStreak, isClaimedToday) {
+      const grid = document.getElementById('rewards-grid');
+      grid.innerHTML = '';
+      const claimBtn = document.getElementById('claim-daily-btn');
+      if (isClaimedToday) {
+        claimBtn.innerText = "Приходи завтра! ⏱️";
+        claimBtn.disabled = true;
+      } else {
+        claimBtn.innerText = "Собрать нектар! 💰";
+        claimBtn.disabled = false;
+      }
+      for (let day = 1; day <= 10; day++) {
+        const dayBox = document.createElement('div');
+        dayBox.className = 'day-box';
+        if (day < userStreak || (day === userStreak && isClaimedToday)) dayBox.classList.add('completed');
+        else if (day === userStreak && !isClaimedToday) dayBox.classList.add('current');
+        else dayBox.classList.add('locked');
+        dayBox.innerHTML = `<div class="day-num">День ${day}</div><div class="day-icon">🪙</div><div class="day-coins">+${formatCoins(DAILY_REWARDS_CONFIG[day])}</div>`;
+        grid.appendChild(dayBox);
+      }
+    }
+
+    function formatCoins(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(0) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(0) + 'K';
+      return num;
+    }
+
+    document.getElementById('claim-daily-btn').addEventListener('click', async () => {
+      const response = await fetch('https://onrender.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramId: activeUser.telegramId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        gameState.balance = data.balance;
+        document.getElementById('balance-display').innerText = gameState.balance;
+        renderDailyRewardsCalendar(data.dailyStreak, true);
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initAndSyncGame();
+    });
+  </script>
 </body>
 </html>
+
