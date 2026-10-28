@@ -236,7 +236,7 @@
     }
 
     // ИСПРАВЛЕНО: Формирование корректной реферальной ссылки для открытия внутри Telegram
-    const refLink = `https://t.me{BOT_USERNAME}?start=ref${activeUser.telegramId}`;
+    const refLink = `https://t.me{richmining_bot}?start=ref${activeUser.telegramId}`;
 
     document.getElementById('invite-btn').addEventListener('click', () => {
       const shareText = `🐝 Стань частью моего пчелиного роя! Качай соты и зарабатывай мёд вместе со мной!`;
@@ -255,7 +255,7 @@
 
     async function fetchSync() {
       try {
-        const response = await fetch('https://onrender.com', {
+        const response = await fetch('https://aaaclickerbackend.onrender.com/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ telegramId: activeUser.telegramId })
