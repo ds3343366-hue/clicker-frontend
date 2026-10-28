@@ -1,4 +1,3 @@
-<!-- ЧАСТЬ 1 ИЗ 3: НАЧАЛО HTML, ГЛОБАЛЬНЫЕ СТИЛИ И СТАТИСТИКА -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -10,10 +9,10 @@
     html, body { background: #111215 !important; margin: 0; padding: 0; min-height: 100vh; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; }
     body { background: radial-gradient(circle at center, #251c08 0%, #111215 100%) !important; background-image: radial-gradient(circle at center, rgba(243, 186, 47, 0.08) 0%, transparent 70%), linear-gradient(to right, rgba(243, 186, 47, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(243, 186, 47, 0.03) 1px, transparent 1px) !important; background-size: auto, 30px 30px, 30px 30px !important; display: flex; flex-direction: column; }
     .game-wrapper { max-width: 480px; margin: 0 auto; padding: 16px 16px 90px 16px; box-sizing: border-box; width: 100%; }
-    .stats-header { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-    .stat-box { flex: 1; background: #1f2022; border: 1.5px solid #f3ba2f; box-shadow: 0 0 10px rgba(243, 186, 47, 0.15); border-radius: 14px; padding: 10px; text-align: center; }
-    .stat-label { font-size: 11px; color: #8e9297; text-transform: uppercase; display: block; }
-    .stat-value { font-size: 15px; font-weight: bold; color: #f3ba2f; }
+    .stats-header { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+    .stat-box { flex: 1; background: #1f2022; border: 1.5px solid #f3ba2f; box-shadow: 0 0 10px rgba(243, 186, 47, 0.15); border-radius: 12px; padding: 8px 4px; text-align: center; }
+    .stat-label { font-size: 10px; color: #8e9297; text-transform: uppercase; display: block; }
+    .stat-value { font-size: 13px; font-weight: bold; color: #f3ba2f; }
     .balance-container { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 10px 0; }
     .coin-icon { font-size: 40px; filter: drop-shadow(0 0 10px #f3ba2f); }
     .balance-amount { font-size: 38px; font-weight: 900; }
@@ -43,17 +42,9 @@
   <div class="game-wrapper">
     <div class="stats-header">
       <div class="stat-box"><span class="stat-label">За тап</span><span class="stat-value" id="tap-profit-display">+1</span></div>
-      <div class="stat-box"><span class="stat-label">В час</span><span class="stat-value" id="profit-display">0</span></div>
+      <div class="stat-box"><span class="stat-label">Доход сот</span><span class="stat-value" id="profit-display">0</span></div>
+      <div class="stat-box"><span class="stat-label">Сон (офлайн)</span><span class="stat-value" id="offline-profit-display">0/ч</span></div>
     </div>
-    <div class="balance-container">
-      <div class="coin-icon">🍯</div>
-      <div class="balance-amount" id="balance-display">0</div>
-    </div>
-    <div class="rank-container">
-      <div class="rank-header"><span id="rank-name">Личинка</span><span id="rank-level">Уровень 1/5</span></div>
-      <div class="rank-progress-bg"><div id="rank-progress-fill"></div></div>
-    </div>
-<!-- ЧАСТЬ 2 ИЗ 3: СТРУКТУРА ИГРОВЫХ ВКЛАДОК (ТАБОВ) И НИЖНЕЕ МЕНЮ -->
     <div id="tab-click" class="game-tab-content active">
       <div class="character-container">
         <div class="character-circle" onclick="handleTap(event)">
@@ -113,11 +104,19 @@
       <button class="nav-item" onclick="switchTab(event, 'tab-friends')"><span>👥</span>Друзья</button>
     </div>
   </div>
-<!-- ЧАСТЬ 3 ИЗ 3: СЦЕНАРИЙ ЛОГИКИ СТАРТА И ПРОВЕРКИ API (JAVASCRIPT) -->
   <script>
-    const BOT_USERNAME = 'my_honey_hive_bot'; 
+    // Укажите точный юзернейм вашего бота из @BotFather без знака @
+    const BOT_USERNAME = 'richmining_bot'; 
+
     let gameState = { energy: 1000, maxEnergy: 1000, multitapLevel: 1, energyLimitLevel: 1, offlineMiningLevel: 1, balance: 0, totalEarned: 0 };
     
+    // Локальное хранилище для пчел на случай отсутствия связи с сервером
+    let localPurchasedCards = {
+      "worker_bee": 0,
+      "advanced_comb": 0,
+      "honey_press": 0
+    };
+
     const LEVELS_CONFIG = [
       { level: 1, name: "Личинка в сотах", minCoins: 0, emoji: "🐛" },
       { level: 2, name: "Пчела-Рабочий", minCoins: 1500, emoji: "🐝" },
@@ -147,6 +146,15 @@
     }
     const activeUser = getTelegramUserData();
 
+    // Полное восстановление энергии за 3 часа (3 часа = 10800 секунд)
+    setInterval(() => {
+      if (gameState.energy < gameState.maxEnergy) {
+        const recoveryPerSecond = gameState.maxEnergy / 10800;
+        gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + recoveryPerSecond);
+        updateEnergyUI();
+      }
+    }, 1000);
+
     function handleTap(event) {
       const cost = gameState.multitapLevel;
       if (gameState.energy >= cost) {
@@ -164,12 +172,16 @@
       document.getElementById('btn-cost-multitap').innerText = `💰 ${gameState.multitapLevel * 200}`;
       document.getElementById('energy-desc').innerText = `Ур. ${gameState.energyLimitLevel} (${gameState.maxEnergy} макс)`;
       document.getElementById('btn-cost-energy').innerText = `💰 ${gameState.energyLimitLevel * 300}`;
+      
+      const currentOfflineProfit = (gameState.offlineMiningLevel - 1) * 50;
       document.getElementById('offline-desc').innerText = `Ур. ${gameState.offlineMiningLevel} (+${gameState.offlineMiningLevel * 50}/ч офлайн)`;
       document.getElementById('btn-cost-offline').innerText = `💰 ${gameState.offlineMiningLevel * 500}`;
+      document.getElementById('offline-profit-display').innerText = `${currentOfflineProfit}/ч`;
     }
 
+    // Исправлено: Генерация ссылки с помощью шаблонных строк
     document.getElementById('invite-btn').addEventListener('click', () => {
-      const link = `https://t.me{BOT_USERNAME}?start=ref${activeUser.telegramId}`;
+      const link = `https://t.me/{BOT_USERNAME}?start=ref${activeUser.telegramId}`;
       const text = `🐝 Собирай нектар и зарабатывай мёд в игре вместе со мной!`;
       const url = `https://t.me{encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
       if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.openTelegramLink(url);
@@ -194,7 +206,7 @@
     }
 
     function updatePlayerRank(totalEarned) {
-      let currentRank = LEVELS_CONFIG[0]; let nextRank = null;
+      let currentRank = LEVELS_CONFIG; let nextRank = null;
       for (let i = 0; i < LEVELS_CONFIG.length; i++) { if (totalEarned >= LEVELS_CONFIG[i].minCoins) { currentRank = LEVELS_CONFIG[i]; nextRank = LEVELS_CONFIG[i + 1] || null; } }
       document.getElementById('rank-name').innerText = currentRank.name;
       document.getElementById('rank-level').innerText = `Уровень ${currentRank.level}/5`;
@@ -204,23 +216,31 @@
       else progressFill.style.width = "100%";
     }
 
-    function renderCards(userPurchasedCards = []) {
+    function renderCards() {
       const container = document.getElementById('cards-container'); container.innerHTML = '';
+      let currentTotalProfit = 0;
+      
       upgradeCards.forEach(card => {
-        const userCard = userPurchasedCards.find(c => c.cardId === card.id);
-        const currentCount = userCard ? userCard.level : 0;
+        const currentCount = localPurchasedCards[card.id] || 0;
         const currentPrice = Math.floor(card.basePrice * Math.pow(1.5, currentCount));
         const nextProfit = Math.floor(card.baseProfit * Math.pow(1.2, currentCount));
+        
+        currentTotalProfit += currentCount * card.baseProfit;
+        
         const el = document.createElement('div'); el.className = 'card-item'; el.style.border = '1px solid rgba(243,186,47,0.2)';
         el.innerHTML = `<div style="font-size:24px">${card.icon}</div><div style="font-size:13px; font-weight:bold; margin:4px 0">${card.name}</div><div style="font-size:11px; color:#8e9297">Приобретено: <span style="color:#f3ba2f; font-weight:bold">${currentCount} шт.</span></div><div style="font-size:11px; color:#2ecc71; margin:4px 0">Доход: +${nextProfit} мёд/ч</div><button class="buy-btn" onclick="buyCard('${card.id}', ${currentPrice})">💰 ${currentPrice}</button>`;
         container.appendChild(el);
       });
+      document.getElementById('profit-display').innerText = currentTotalProfit;
     }
 
-    async function buyCard(cardId, price) {
+    function buyCard(cardId, price) {
       if (gameState.balance < price) return alert("Не хватает мёда!");
-      gameState.balance -= price; document.getElementById('balance-display').innerText = gameState.balance;
-      alert("Успешно приобретено!"); renderCards();
+      gameState.balance -= price; 
+      localPurchasedCards[cardId] = (localPurchasedCards[cardId] || 0) + 1;
+      document.getElementById('balance-display').innerText = gameState.balance;
+      alert("Успешно приобретено!"); 
+      renderCards();
     }
 
     async function fetchSync() {
@@ -229,9 +249,13 @@
         const data = await response.json();
         if (data.success && data.user) {
           gameState.balance = data.user.balance; gameState.maxEnergy = data.user.maxEnergy || 1000; gameState.multitapLevel = data.user.multitapLevel || 1; gameState.energyLimitLevel = data.user.energyLimitLevel || 1; gameState.offlineMiningLevel = data.user.offlineMiningLevel || 1; gameState.totalEarned = data.user.totalEarned || 0;
-          document.getElementById('balance-display').innerText = gameState.balance; updateEnergyUI(); updatePlayerRank(gameState.totalEarned); renderCards(data.user.purchasedCards);
+          if(data.user.purchasedCards && data.user.purchasedCards.length > 0) {
+            data.user.purchasedCards.forEach(c => { localPurchasedCards[c.cardId] = c.level; });
+          }
+          document.getElementById('balance-display').innerText = gameState.balance; updateEnergyUI(); updatePlayerRank(gameState.totalEarned);
         }
-      } catch (e) { updatePlayerRank(0); renderCards([]); updateEnergyUI(); }
+      } catch (e) { updatePlayerRank(0); updateEnergyUI(); }
+      renderCards();
     }
     document.addEventListener("DOMContentLoaded", () => { fetchSync(); });
   </script>
