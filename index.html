@@ -153,6 +153,9 @@
       <button class="nav-item" onclick="switchTab(event, 'tab-friends')"><span>👥</span>Друзья</button>
     </div>
   </div>
+  <!-- ==========================================
+       ИГРОВАЯ ЛОГИКА (ВСТРОЕННЫЙ APP.JS) — ЧАСТЬ 1
+       ========================================== -->
   <script>
     // ⚠️ Впишите имя вашего бота из @BotFather БЕЗ символа @
     const BOT_USERNAME = 'richmining_bot'; 
@@ -189,7 +192,7 @@
     }
     const activeUser = getTelegramUserData();
 
-    // РАСЧЕТ: Восстановление энергии занимает строго 3 часа (10800 сек)
+    // Полное восстановление энергии занимает ровно 3 часа (10800 секунд)
     setInterval(() => {
       if (gameState.energy < gameState.maxEnergy) {
         const recoveryPerSecond = gameState.maxEnergy / 10800;
@@ -207,16 +210,18 @@
       }
     }
 
-    /* ИСПРАВЛЕНО: Восстановление игрового прогресса из MongoDB без сбросов */
+    /* ФИКС: Тотальная синхронизация состояния интерфейса с полями базы данных */
     function applyServerData(serverUser) {
       const oldBalance = gameState.balance;
       
       gameState.balance = serverUser.balance;
       gameState.energy = serverUser.energy;
       gameState.maxEnergy = serverUser.maxEnergy || 1000;
+      
+      // Вытягиваем сохраненные бусты напрямую, исключая визуальный сброс
       gameState.multitapLevel = serverUser.multitapLevel || 1;
       gameState.energyLimitLevel = serverUser.energyLimitLevel || 1;
-      gameState.offlineMiningLevel = serverUser.dailyStreak || 1; 
+      gameState.offlineMiningLevel = serverUser.cipherClaimedToday ? 2 : (serverUser.dailyStreak || 1); 
       gameState.totalEarned = serverUser.totalEarned || 0;
 
       document.getElementById('balance-display').innerText = Math.floor(gameState.balance);
@@ -230,7 +235,7 @@
       
       const earnedOffline = gameState.balance - oldBalance;
       if (earnedOffline > 0 && oldBalance > 0) {
-        setTimeout(() => { alert(`🐝 С возвращением!\nРой принес вам: +${earnedOffline} меда! 🍯`); }, 1000);
+        setTimeout(() => { alert(`🐝 Рой трудился в офлайне!\nДобыто пассивного нектара: +${earnedOffline} мёда! 🍯`); }, 1000);
       }
     }
 
@@ -247,7 +252,7 @@
           gameState.maxEnergy = data.user.maxEnergy || 1000; 
           gameState.multitapLevel = data.user.multitapLevel || 1; 
           gameState.energyLimitLevel = data.user.energyLimitLevel || 1; 
-          gameState.offlineMiningLevel = data.user.dailyStreak || 1; 
+          gameState.offlineMiningLevel = data.user.cipherClaimedToday ? 2 : (data.user.dailyStreak || 1); 
           gameState.totalEarned = data.user.totalEarned || 0;
           
           if (data.user.purchasedCards && data.user.purchasedCards.length > 0) {
@@ -278,7 +283,7 @@
       document.getElementById('offline-profit-display').innerText = currentOfflineProfit + '/ч';
     }
 
-    // ИСПРАВЛЕНО: Интерактивная покупка с отправкой запроса на сервер Render
+    // ИСПРАВЛЕНО: Интерактивный вызов бэкенда с мгновенной фиксацией в MongoDB
     async function upgradeStat(type) {
       let cost = type === 'multitap' ? gameState.multitapLevel * 200 : type === 'energy' ? gameState.energyLimitLevel * 300 : gameState.offlineMiningLevel * 500;
       if (gameState.balance < cost) return alert("Не хватает мёда!");
@@ -287,23 +292,18 @@
         const response = await fetch('https://aaaclickerbackend.onrender.com/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ telegramId: activeUser.telegramId, type: type, cost: cost })
+          body: JSON.stringify({ 
+            telegramId: activeUser.telegramId, 
+            clicksCount: 0,
+            customUpgrade: { type: type, cost: cost } // Передаем кастомный флаг апгрейда прямо в роут кликов
+          })
         });
         const data = await response.json();
-        
-        if (data.success && data.user) {
-          gameState.balance = data.user.balance;
-          gameState.multitapLevel = data.user.multitapLevel;
-          gameState.maxEnergy = data.user.maxEnergy;
-          gameState.energyLimitLevel = data.user.energyLimitLevel;
-          gameState.offlineMiningLevel = data.user.dailyStreak || 1;
-          
-          document.getElementById('balance-display').innerText = Math.floor(gameState.balance);
-          document.getElementById('tap-profit-display').innerText = '+' + gameState.multitapLevel;
-          updateEnergyUI();
+        if (data.success) {
+          fetchSync(); // Перезапрашиваем чистые данные
         }
       } catch (e) {
-        console.error("Ошибка сохранения буста:", e);
+        console.error("Сбой сети при сохранении буста:", e);
       }
     }
 
