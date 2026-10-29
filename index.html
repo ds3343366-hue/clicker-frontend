@@ -107,7 +107,7 @@
       <div class="rank-progress-bg"><div id="rank-progress-fill"></div></div>
     </div>
 
-    <!-- ТАБЫ ИНТЕРФЕЙСА -->
+    <!-- ОКНА РАЗДЕЛОВ -->
     <div id="tab-click" class="game-tab-content active">
       <div class="character-container">
         <div class="character-circle" onclick="handleTap(event)"><div id="bee-emoji" class="bee-emoji-fallback">🐛</div></div>
@@ -158,6 +158,7 @@
 
     let gameState = { energy: 1000, maxEnergy: 1000, multitapLevel: 1, energyLimitLevel: 1, offlineMiningLevel: 1, balance: 0, totalEarned: 0 };
     let localPurchasedCards = { "ceo_card": 0, "marketing_card": 0, "crypto_card": 0 };
+    let clickQueue = { pendingClicks: 0, isSending: false, syncInterval: 10000 };
 
     const LEVELS_CONFIG = [
       { level: 1, name: "Личинка в сотах", minCoins: 0, emoji: "🐛" },
@@ -188,6 +189,7 @@
     }
     const activeUser = getTelegramUserData();
 
+    // Восстановление 3 часа
     setInterval(function() {
       if (gameState.energy < gameState.maxEnergy) {
         const recoveryPerSecond = gameState.maxEnergy / 10800;
@@ -202,9 +204,50 @@
         gameState.energy -= cost; gameState.balance += cost; gameState.totalEarned += cost;
         document.getElementById('balance-display').innerText = Math.floor(gameState.balance);
         updateEnergyUI(); updatePlayerRank(gameState.totalEarned);
+        clickQueue.pendingClicks += 1;
       }
     }
 
+    // 🔥 МОЩНЫЙ АНТИЧИТ С МГНОВЕННЫМ СПАСЕНИЕМ ПРИ ЗАКРЫТИИ ИЛИ ОБНОВЛЕНИИ СТРАНИЦЫ
+    async function sendPendingClicksToServer() {
+      if (clickQueue.pendingClicks === 0 || clickQueue.isSending) return;
+      const clicksToSend = clickQueue.pendingClicks;
+      clickQueue.pendingClicks = 0;
+      clickQueue.isSending = true;
+
+      try {
+        const response = await fetch('https://onrender.com', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegramId: activeUser.telegramId, clicksCount: clicksToSend })
+        });
+        const data = await response.json();
+        if (data.success) {
+          gameState.balance = data.balance;
+          gameState.energy = data.energy;
+          document.getElementById('balance-display').innerText = Math.floor(gameState.balance);
+          updateEnergyUI();
+          updatePlayerRank(data.totalEarned);
+        } else {
+          clickQueue.pendingClicks += clicksToSend; // Возвращаем в очередь при сбое
+        }
+      } catch (error) {
+        clickQueue.pendingClicks += clicksToSend;
+      } finally {
+        clickQueue.isSending = false;
+      }
+    }
+
+    // Отправка по таймеру раз в 10 секунд
+    setInterval(sendPendingClicksToServer, clickQueue.syncInterval);
+
+    // ИСПРАВЛЕНО ДЛЯ ЖЕЛЕЗНОГО СОХРАНЕНИЯ: Перехват закрытия, свайпа или перезагрузки окна
+    window.addEventListener('beforeunload', function() { sendPendingClicksToServer(); });
+    window.addEventListener('pagehide', function() { sendPendingClicksToServer(); });
+    
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.onEvent('viewportChanged', function() { sendPendingClicksToServer(); });
+    }
     function applyServerData(serverUser) {
       if (!serverUser) return;
       const oldBalance = gameState.balance;
@@ -218,7 +261,6 @@
       gameState.offlineMiningLevel = serverUser.offlineMiningLevel || 1; 
       gameState.totalEarned = serverUser.totalEarned || 0;
 
-      // ИСПРАВЛЕНО: Жёсткое переприсвоение массива карт из базы перед перерисовкой UI
       if (serverUser.purchasedCards && serverUser.purchasedCards.length > 0) {
         serverUser.purchasedCards.forEach(function(c) { 
           localPurchasedCards[c.cardId] = c.level; 
@@ -248,14 +290,11 @@
           body: JSON.stringify({ telegramId: activeUser.telegramId }) 
         });
         const data = await response.json();
-        if (data.success && data.user) {
-          applyServerData(data.user);
-        }
-      } catch (e) { 
-        console.warn("Локальный режим:", e);
-      }
+        if (data.success && data.user) { applyServerData(data.user); }
+      } catch (e) { console.warn("Локальный режим:", e); }
       renderCards();
     }
+
     function updateEnergyUI() {
       document.getElementById('current-energy').innerText = Math.floor(gameState.energy);
       document.getElementById('max-energy').innerText = gameState.maxEnergy;
@@ -288,34 +327,29 @@
 
       try {
         const response = await fetch('https://aaaclickerbackend.onrender.com/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ telegramId: activeUser.telegramId, type: type, cost: cost })
         });
         const data = await response.json();
-        if (data.success && data.user) {
-          applyServerData(data.user);
-        }
-      } catch (e) {
-        console.error("Ошибка сохранения характеристик:", e);
-      }
+        if (data.success && data.user) { applyServerData(data.user); }
+      } catch (e) { console.error("Ошибка сохранения:", e); }
     }
 
     document.getElementById('invite-btn').addEventListener('click', function() {
-      const shareUrl = 'https://t.me' + /richmining_bot/ + '?start=ref' + activeUser.telegramId;
+      const shareUrl = 'https://t.me/' + richmining_bot + '?start=ref' + activeUser.telegramId;
       const textMessage = '🚀 Собирай нектар в Tap Game вместе со мной! Развивай пчелиный улей и получай бонус!';
-      const fullLink = 'https://t.meshare/richmining_bot=' + encodeURIComponent(shareUrl) + '&text=' + encodeURIComponent(textMessage);
+      const fullLink = 'https://t.meshare/url?url=' + encodeURIComponent(shareUrl) + '&text=' + encodeURIComponent(textMessage);
       if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.openTelegramLink(fullLink); }
       else { window.open(fullLink, '_blank'); }
     });
 
     document.getElementById('copy-btn').addEventListener('click', function() {
-      const shareUrl = 'https://t.me' + /richmining_bot/ + '?start=ref' + activeUser.telegramId;
-      navigator.clipboard.writeText(shareUrl).then(function() { alert("Ссылка скопирована в буфер! 📋"); });
+      const shareUrl = 'https://t.me/' + richmining_bot + '?start=ref' + activeUser.telegramId;
+      navigator.clipboard.writeText(shareUrl).then(function() { alert("Ссылка копирована! 📋"); });
     });
 
     function updatePlayerRank(totalEarned) {
-      let currentRank = LEVELS_CONFIG[0]; let nextRank = null;
+      let currentRank = LEVELS_CONFIG; let nextRank = null;
       for (let i = 0; i < LEVELS_CONFIG.length; i++) { if (totalEarned >= LEVELS_CONFIG[i].minCoins) { currentRank = LEVELS_CONFIG[i]; nextRank = LEVELS_CONFIG[i + 1] || null; } }
       document.getElementById('rank-name').innerText = currentRank.name;
       document.getElementById('rank-level').innerText = 'Уровень ' + currentRank.level + '/5';
@@ -328,13 +362,11 @@
     function renderCards() {
       const container = document.getElementById('cards-container'); container.innerHTML = '';
       let currentTotalProfit = 0;
-      
       upgradeCards.forEach(function(card) {
         const currentCount = localPurchasedCards[card.id] || 0;
         const currentPrice = Math.floor(card.basePrice * Math.pow(1.5, currentCount));
         const nextProfit = Math.floor(card.baseProfit * Math.pow(1.2, currentCount));
         currentTotalProfit += currentCount * card.baseProfit;
-        
         const el = document.createElement('div'); el.className = 'card-item';
         el.innerHTML = '<div style="font-size:24px">' + card.icon + '</div><div style="font-size:13px; font-weight:bold; margin:4px 0">' + card.name + '</div><div style="font-size:11px; color:#8e9297">Куплено: <span style="color:#f3ba2f; font-weight:bold">' + currentCount + ' шт.</span></div><div style="font-size:11px; color:#2ecc71; margin:4px 0">Доход: +' + nextProfit + ' мёд/ч</div><button class="buy-btn" onclick="buyCard(\'' + card.id + '\', ' + currentPrice + ')">💰 ' + currentPrice + '</button>';
         container.appendChild(el);
@@ -347,8 +379,7 @@
       gameState.balance -= price; document.getElementById('balance-display').innerText = Math.floor(gameState.balance);
       try {
         const response = await fetch('https://aaaclickerbackend.onrender.com/', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ telegramId: activeUser.telegramId, cardId: cardId })
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId: activeUser.telegramId, cardId: cardId })
         });
         const data = await response.json();
         if (data.success && data.user) {
