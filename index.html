@@ -316,7 +316,7 @@
     });
 
     document.getElementById('copy-btn').addEventListener('click', function() {
-      const shareUrl = 'https://t.me' + /richmining_bot/ + '?start=ref' + activeUser.telegramId;
+      const shareUrl = 'https://t.me' + /richmining_bot + '?start=ref' + activeUser.telegramId;
       navigator.clipboard.writeText(shareUrl).then(function() { alert("Ссылка скопирована в буфер! 📋"); });
     });
 
