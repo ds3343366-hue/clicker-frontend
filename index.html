@@ -284,23 +284,36 @@
     }
 
     // ИСПРАВЛЕНО: Интерактивный вызов бэкенда с мгновенной фиксацией в MongoDB
+        // СИНХРОНИЗИРОВАНО: Прямой вызов нового роута сохранения бустов в базу данных
     async function upgradeStat(type) {
       let cost = type === 'multitap' ? gameState.multitapLevel * 200 : type === 'energy' ? gameState.energyLimitLevel * 300 : gameState.offlineMiningLevel * 500;
       if (gameState.balance < cost) return alert("Не хватает мёда!");
 
       try {
-        const response = await fetch('https://aaaclickerbackend.onrender.com/', {
+        const response = await fetch('https://onrender.com', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             telegramId: activeUser.telegramId, 
-            clicksCount: 0,
-            customUpgrade: { type: type, cost: cost } // Передаем кастомный флаг апгрейда прямо в роут кликов
+            type: type, 
+            cost: cost 
           })
         });
         const data = await response.json();
-        if (data.success) {
-          fetchSync(); // Перезапрашиваем чистые данные
+        
+        if (data.success && data.user) {
+          // Мгновенно обновляем интерфейс чистыми данными из MongoDB
+          gameState.balance = data.user.balance;
+          gameState.multitapLevel = data.user.multitapLevel || 1;
+          gameState.maxEnergy = data.user.maxEnergy || 1000;
+          gameState.energyLimitLevel = data.user.energyLimitLevel || 1;
+          gameState.offlineMiningLevel = data.user.offlineMiningLevel || 1;
+          
+          document.getElementById('balance-display').innerText = Math.floor(gameState.balance);
+          document.getElementById('tap-profit-display').innerText = '+' + gameState.multitapLevel;
+          updateEnergyUI();
+        } else {
+          alert("Ошибка сервера при покупке: " + data.error);
         }
       } catch (e) {
         console.error("Сбой сети при сохранении буста:", e);
@@ -316,7 +329,7 @@
     });
 
     document.getElementById('copy-btn').addEventListener('click', function() {
-      const shareUrl = 'https://t.me' + /richmining_bot + '?start=ref' + activeUser.telegramId;
+      const shareUrl = 'https://t.me' + richmining_bot + '?start=ref' + activeUser.telegramId;
       navigator.clipboard.writeText(shareUrl).then(function() { alert("Ссылка скопирована в буфер! 📋"); });
     });
 
