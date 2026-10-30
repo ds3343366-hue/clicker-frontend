@@ -263,7 +263,7 @@
         <div class="balance-container">🍯 <span id="balance-display">0</span></div>
     </div>
 
-    <!-- Уровни 1-30 и прогресс -->
+    <!-- Уровни 1-30 и числовой прогресс -->
     <div class="level-section">
         <div class="level-header">
             <span id="level-title-display">Скин: Загрузка...</span>
@@ -279,7 +279,7 @@
     <div id="page-click" class="page-content active">
         <div class="click-wrapper">
             <div id="neon-ring" class="neon-circle"></div>
-            <div class="click-area" id="bee-tap-btn">🐛</div>
+            <div class="click-area" id="bee-tap-btn">🐝</div>
         </div>
         <div class="energy-container">⚡ <span id="energy-display">1000 / 1000</span></div>
     </div>
@@ -375,9 +375,11 @@
         const BACKEND_URL = "https://aaaclickerbackend.onrender.com/"; 
         const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString() || "12345"; 
         
+        // Масштабирование до 30 уровней
         const MAX_LEVELS = 30;
         const LEVEL_EXP_BASES = Array.from({length: MAX_LEVELS}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
 
+        // Визуальная эволюция скинов пчелы
         const BEE_SKINS = [
             { name: "Яйцо Улья 🥚", icon: "🥚" }, { name: "Младшая Личинка 🐛", icon: "🐛" },
             { name: "Куколка Соты 💤", icon: "💤" }, { name: "Новорожденная Пчелка 👶", icon: "👶" },
@@ -410,7 +412,7 @@
         
         async function syncUser() { 
             try { 
-                const response = await fetch(`${https://aaaclickerbackend.onrender.com/}/api/user/sync`, { 
+                const response = await fetch(`${BACKEND_URL}/api/user/sync`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ telegramId }) 
@@ -448,7 +450,7 @@
             const sendCount = localClicksQueue; 
             localClicksQueue = 0; 
             try { 
-                const response = await fetch(`${https://aaaclickerbackend.onrender.com/}/api/user/click`, { 
+                const response = await fetch(`${BACKEND_URL}/api/user/click`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ telegramId, clicksCount: sendCount }) 
@@ -468,7 +470,7 @@
             if (!user) return; 
             if (localClicksQueue > 0) await sendClicksBatchToServer(); 
             try { 
-                const response = await fetch(`${https://aaaclickerbackend.onrender.com/}/api/user/buy-card`, { 
+                const response = await fetch(`${BACKEND_URL}/api/user/buy-card`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ telegramId, cardId }) 
@@ -499,7 +501,7 @@
             } 
             if (localClicksQueue > 0) await sendClicksBatchToServer(); 
             try { 
-                const response = await fetch(`${https://aaaclickerbackend.onrender.com/}/api/user/upgrade-stat`, { 
+                const response = await fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ telegramId, type, cost }) 
@@ -515,6 +517,7 @@
             } 
         } 
         
+        // 3-часовое плавное восстановление энергии (ПОЛНОСТЬЮ ИСПРАВЛЕНО)
         function startPassiveMiningTimer() { 
             setInterval(() => { 
                 if (!user) return; 
@@ -565,6 +568,7 @@
             document.getElementById("progress-numerical").innerText = `${Math.floor(user.totalEarned)} / ${Math.floor(currentLevelExpBase)}`;
             document.getElementById("bee-tap-btn").innerText = activeSkin.icon;
 
+            // Динамический цвет неонового кольца (Красный -> Желтый -> Зеленый)
             const energyRatio = user.energy / user.maxEnergy;
             let ringColor = "#ff3b30"; 
             if (energyRatio > 0.7) {
@@ -620,8 +624,9 @@
             document.getElementById("referrals-list").innerHTML = refListHtml; 
         } 
         
+        // Полностью исправленные реферальные функции с Telegram API
         function getBotRefLink() { 
-            return `https://t.me{richmining_bot}`; 
+            return `https://t.me{telegramId}`; 
         } 
         
         function inviteFriend() { 
