@@ -4,653 +4,292 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bee GameFi Hive Clicker</title>
-    <!-- Подключаем Telegram WebApp API -->
+    <!-- Подключаем Telegram Web App SDK для авторизации -->
     <script src="https://telegram.org"></script>
-    
     <style>
-        :root { 
-            --primary: #ffcc00; 
-            --primary-dark: #cc9900; 
-            --bg-dark: #0a0a0c; 
-            --bg-card: #141419; 
-            --text-main: #ffffff; 
-            --text-muted: #8e8e93; 
-            --energy: #00ffcc; 
-            --neon-glow: #ffcc00;
-        } 
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background-color: var(--bg-dark); 
-            color: var(--text-main); 
-            margin: 0; 
-            padding: 15px; 
-            text-align: center; 
-            user-select: none; 
-            -webkit-user-select: none; 
-            overflow-x: hidden; 
-        } 
-        .header-stats { 
-            background: var(--bg-card); 
-            padding: 16px; 
-            border-radius: 20px; 
-            margin-bottom: 15px; 
-            box-shadow: 0 4px 25px rgba(0,0,0,0.7); 
-            border: 1px solid rgba(255, 254, 0, 0.05);
-        } 
-        .balance-container { 
-            font-size: 38px; 
-            font-weight: 900; 
-            color: var(--primary); 
-            margin: 8px 0; 
-            text-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
-        } 
-        .info-row { 
-            display: flex; 
-            justify-content: space-around; 
-            font-size: 14px; 
-            color: var(--text-muted); 
-            margin-bottom: 5px; 
-        } 
-        .info-row span { 
-            color: var(--text-main); 
-            font-weight: bold; 
-        } 
-        .level-section {
-            background: var(--bg-card);
-            padding: 12px;
-            border-radius: 14px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        .level-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
-                .progress-bar-container {
-            width: 100%;
-            height: 10px;
-            background: #222;
-            border-radius: 50px;
-            overflow: hidden;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #ff3b30, #ffcc00, #34c759);
-            transition: width 0.3s ease;
-        }
-        .level-numerical {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-align: right;
-            margin-top: 4px;
-        }
-        .page-content { 
-            display: none; 
-            animation: fadeIn 0.25s ease-in-out; 
-        } 
-        .page-content.active { 
-            display: block; 
-        } 
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: scale(0.98); } 
-            to { opacity: 1; transform: scale(1); } 
-        } 
-        .click-wrapper {
-            position: relative;
-            width: 230px;
-            height: 230px;
-            margin: 25px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .click-area { 
-            background: radial-gradient(circle, #22222b 0%, #111115 100%); 
-            width: 200px; 
-            height: 200px; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 90px; 
-            cursor: pointer; 
-            z-index: 2;
-            transition: transform 0.05s ease; 
-            touch-action: manipulation; 
-        } 
-        .neon-circle {
-            position: absolute;
-            width: 216px;
-            height: 216px;
-            border-radius: 50%;
-            border: 4px solid #ff3b30; 
-            box-shadow: 0 0 20px #ff3b30;
-            z-index: 1;
-            transition: border-color 0.5s ease, box-shadow 0.5s ease;
-        }
-        .click-area:active { 
-            transform: scale(0.94); 
-        } 
-        .energy-container { 
-            font-size: 22px; 
-            font-weight: 800; 
-            color: var(--energy); 
-            margin-top: 15px; 
-            text-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
-        }
-        h3 { 
-            border-bottom: 2px solid var(--primary); 
-            padding-bottom: 6px; 
-            text-align: left; 
-            margin: 20px 0 15px 0; 
-            font-size: 18px; 
-            text-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
-        } 
-        .card-list { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            margin-bottom: 20px; 
-        } 
-        .card { 
-            background: var(--bg-card); 
-            padding: 14px; 
-            border-radius: 14px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            text-align: left; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
-            border: 1px solid rgba(255,255,255,0.02);
-        } 
-        .card-info { 
-            display: flex; 
-            flex-direction: column; 
-        } 
-        .card-info strong { 
-            font-size: 15px; 
-            margin-bottom: 4px; 
-        } 
-        .card-info span { 
-            font-size: 12px; 
-            color: var(--text-muted); 
-        } 
-        .btn-buy { 
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); 
-            color: #000000; 
-            border: none; 
-            padding: 10px 18px; 
-            border-radius: 10px; 
-            font-weight: bold; 
-            font-size: 14px; 
-            cursor: pointer; 
-            box-shadow: 0 2px 8px rgba(255, 204, 0, 0.2);
-        } 
-        .ref-box { 
-            background: var(--bg-card); 
-            padding: 15px; 
-            border-radius: 14px; 
-            margin-bottom: 20px; 
-        } 
-        .btn-ref { 
-            background: #25d366; 
-            color: white; 
-            border: none; 
-            padding: 12px; 
-            border-radius: 10px; 
-            width: 100%; 
-            font-weight: bold; 
-            margin-bottom: 10px; 
-            cursor: pointer; 
-        } 
-        .btn-copy { 
-            background: #222; 
-            color: white; 
-            border: 1px solid #333; 
-            padding: 10px; 
-            border-radius: 10px; 
-            width: 100%; 
-            cursor: pointer; 
-        } 
-        .nav-tabs { 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            width: 100%; 
-            background: #0d0d11; 
-            display: flex; 
-            justify-content: space-around; 
-            padding: 12px 0; 
-            border-top: 1px solid #1c1c24; 
-            z-index: 100; 
-        } 
-        .tab-item { 
-            color: var(--text-muted); 
-            font-size: 12px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            gap: 4px; 
-            cursor: pointer; 
-            flex: 1; 
-        } 
-        .tab-item span:first-child { 
-            font-size: 20px; 
-        } 
-        .tab-item.active { 
-            color: var(--primary); 
-            font-weight: bold; 
-            text-shadow: 0 0 8px rgba(255, 204, 0, 0.3);
-        } 
-        .padding-bottom { 
-            height: 90px; 
-        }
+        body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; text-align: center; padding: 20px; }
+        .card { background: #2a2a2a; border: 1px solid #ffcc00; padding: 15px; margin: 10px auto; max-width: 400px; border-radius: 8px; text-align: left; }
+        .menu { display: flex; justify-content: space-around; max-width: 400px; margin: 20px auto; padding: 10px; background: #222; border-radius: 8px; }
+        .menu-item { cursor: pointer; padding: 5px 10px; }
+        button { background: #ffcc00; color: #000; border: none; padding: 8px 15px; font-weight: bold; border-radius: 5px; cursor: pointer; float: right; }
+        button:hover { background: #e6b800; }
+        #bee-click { font-size: 80px; cursor: pointer; user-select: none; margin: 20px auto; width: 120px; transition: transform 0.1s; }
+        #bee-click:active { transform: scale(0.95); }
+        .clear { clear: both; }
     </style>
 </head>
 <body>
 
-    <!-- Главная Статичная Панель -->
-    <div class="header-stats">
-        <h2>Bee GameFi Hive Clicker</h2>
-        <div class="info-row">
-            <div>За тап: <span id="tap-profit-display">+1</span></div>
-            <div>Пассив улья: <span id="passive-display">0/ч</span></div>
-        </div>
-        <div class="balance-container">🍯 <span id="balance-display">0</span></div>
+    <h2>Bee GameFi Hive Clicker</h2>
+
+    <div>За тап: +<span id="click-power-display">1</span></div>
+    <div>Пассив улья: <span id="passive-display">0</span>/ч</div>
+    <h1 style="color: #ffcc00;">🍯 <span id="balance-display">0</span></h1>
+
+    <div>Скин: Загрузка... Ур. <span id="level-display">1</span> / 30</div>
+    <div><span id="total-earned-display">0</span> / 0</div>
+
+    <!-- Главная кликабельная пчела -->
+    <div id="bee-click">🐝</div>
+
+    <div>⚡ <span id="energy-display">1000 / 1000</span></div>
+
+    <h3>Развитие Бизнес-Сот 📊</h3>
+
+    <div class="card">
+        <button onclick="buyCard('ceo_card')">💰 <span id="price-ceo_card">100</span></button>
+        <strong>Личинка в сотах</strong><br>
+        Уровень <span id="lvl-ceo_card">1</span> Доход: +10 мёда/ч
+        <div class="clear"></div>
     </div>
 
-    <!-- Уровни 1-30 и числовой прогресс -->
-    <div class="level-section">
-        <div class="level-header">
-            <span id="level-title-display">Скин: Загрузка...</span>
-            <span id="level-num-display">Ур. 1 / 30</span>
-        </div>
-        <div class="progress-bar-container">
-            <div id="progress-fill" class="progress-bar-fill"></div>
-        </div>
-        <div id="progress-numerical" class="level-numerical">0 / 0</div>
+    <div class="card">
+        <button onclick="buyCard('marketing_card')">💰 <span id="price-marketing_card">500</span></button>
+        <strong>Маркетинг роя</strong><br>
+        Уровень <span id="lvl-marketing_card">0</span> Доход: +45 мёда/ч
+        <div class="clear"></div>
     </div>
 
-    <!-- ================= ВКЛАДКА: КЛИК ================= -->
-    <div id="page-click" class="page-content active">
-        <div class="click-wrapper">
-            <div id="neon-ring" class="neon-circle"></div>
-            <div class="click-area" id="bee-tap-btn">🐝</div>
-        </div>
-        <div class="energy-container">⚡ <span id="energy-display">1000 / 1000</span></div>
+    <div class="card">
+        <button onclick="buyCard('crypto_card')">💰 <span id="price-crypto_card">2000</span></button>
+        <strong>Крипто-Пчела</strong><br>
+        Уровень <span id="lvl-crypto_card">0</span> Доход: +200 мёда/ч
+        <div class="clear"></div>
     </div>
 
-    <!-- ================= ВКЛАДКА: СОТЫ (МАЙНИНГ) ================= -->
-    <div id="page-cards" class="page-content">
-        <h3>Развитие Бизнес-Сот 📊</h3>
-        <div class="card-list">
-            <div class="card">
-                <div class="card-info">
-                    <strong>Личинка в сотах</strong>
-                    <span id="lvl-ceo_card">Уровень 1</span>
-                    <span>Доход: +10 мёда/ч</span>
-                </div>
-                <button class="btn-buy" onclick="buyCard('ceo_card')">💰 <span id="price-ceo_card">100</span></button>
-            </div>
-            <div class="card">
-                <div class="card-info">
-                    <strong>Маркетинг роя</strong>
-                    <span id="lvl-marketing_card">Уровень 0</span>
-                    <span>Доход: +45 мёда/ч</span>
-                </div>
-                <button class="btn-buy" onclick="buyCard('marketing_card')">💰 <span id="price-marketing_card">500</span></button>
-            </div>
-            <div class="card">
-                <div class="card-info">
-                    <strong>Крипто-Пчела</strong>
-                    <span id="lvl-crypto_card">Уровень 0</span>
-                    <span>Доход: +200 мёда/ч</span>
-                </div>
-                <button class="btn-buy" onclick="buyCard('crypto_card')">💰 <span id="price-crypto_card">2000</span></button>
-            </div>
-        </div>
+    <h3>Инженерия Улья ⚡</h3>
+
+    <div class="card">
+        <button onclick="upgradeStat('multitap', 200)">💰 <span id="price-multitap">200</span></button>
+        <strong>👆 Мульти-Тап</strong><br>
+        Ур. <span id="lvl-multitap">1</span> Увеличивает силу клика на +1
+        <div class="clear"></div>
     </div>
 
-    <!-- ================= ВКЛАДКА: БУСТЫ ================= -->
-    <div id="page-boosts" class="page-content">
-        <h3>Инженерия Улья ⚡</h3>
-        <div class="card-list">
-            <div class="card">
-                <div class="card-info">
-                    <strong>👆 Мульти-Тап</strong>
-                    <span id="lvl-multitap">Ур. 1</span>
-                    <span>Увеличивает силу клика на +1</span>
-                </div>
-                <button class="btn-buy" onclick="upgradeStat('multitap')">💰 <span id="price-multitap">200</span></button>
-            </div>
-            <div class="card">
-                <div class="card-info">
-                    <strong>🔋 Лимит бака</strong>
-                    <span id="lvl-energy">Ур. 1</span>
-                    <span>Максимум энергии (+500 бак)</span>
-                </div>
-                <button class="btn-buy" onclick="upgradeStat('energy')">💰 <span id="price-energy">300</span></button>
-            </div>
-            <div class="card">
-                <div class="card-info">
-                    <strong>💤 Технология Сна</strong>
-                    <span id="lvl-offline">Ур. 1</span>
-                    <span>Офлайн буст (+50 мёда/ч)</span>
-                </div>
-                <button class="btn-buy" onclick="upgradeStat('offline')">💰 <span id="price-offline">500</span></button>
-            </div>
-        </div>
+    <div class="card">
+        <button onclick="upgradeStat('energy', 300)">💰 <span id="price-energy">300</span></button>
+        <strong>🔋 Лимит бака</strong><br>
+        Ур. <span id="lvl-energy">1</span> Максимум энергии (+500 бак)
+        <div class="clear"></div>
     </div>
 
-    <!-- ================= ВКЛАДКА: ДРУЗЬЯ ================= -->
-    <div id="page-friends" class="page-content">
-        <h3>Пригласить в Рой 👥</h3>
-        <div class="ref-box">
-            <button class="btn-ref" onclick="inviteFriend()">Пригласить пчелу 🐝</button>
-            <button class="btn-copy" onclick="copyRefLink()">Скопировать ссылку 📋</button>
-        </div>
-        <h4>Ваш рабочий рой (<span id="ref-count-display">0</span>):</h4>
-        <div class="card-list" id="referrals-list"></div>
+    <div class="card">
+        <button onclick="upgradeStat('offline', 500)">💰 <span id="price-offline">500</span></button>
+        <strong>💤 Технология Сна</strong><br>
+        Ур. <span id="lvl-offline">1</span> Офлайн буст (+50 мёда/ч)
+        <div class="clear"></div>
     </div>
 
-    <!-- Вкладки навигации -->
-    <div class="nav-tabs">
-        <div class="tab-item active" onclick="switchTab('click', this)"><span>🐝</span><span>Клик</span></div>
-        <div class="tab-item" onclick="switchTab('cards', this)"><span>📊</span><span>Соты</span></div>
-        <div class="tab-item" onclick="switchTab('boosts', this)"><span>⚡</span><span>Бусты</span></div>
-        <div class="tab-item" onclick="switchTab('friends', this)"><span>👥</span><span>Друзья</span></div>
+    <h3>Пригласить в Рой 👥</h3>
+    <div class="card" style="text-align: center;">
+        Пригласить пчелу 🐝 Скопировать ссылку 📋
     </div>
 
-    <div class="padding-bottom"></div>
-        <script>
-        let user = null; 
-        let localClicksQueue = 0; 
-        let clickTimeout = null; 
-        let visualBalance = 0; 
-        
-        const BACKEND_URL = "https://aaaclickerbackend.onrender.com/"; 
-        const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString() || "12345"; 
-        
-        // Масштабирование до 30 уровней
-        const MAX_LEVELS = 30;
-        const LEVEL_EXP_BASES = Array.from({length: MAX_LEVELS}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
+    <h4>Ваш рабочий рой ( 0):</h4>
 
-        // Визуальная эволюция скинов пчелы
-        const BEE_SKINS = [
-            { name: "Яйцо Улья 🥚", icon: "🥚" }, { name: "Младшая Личинка 🐛", icon: "🐛" },
-            { name: "Куколка Соты 💤", icon: "💤" }, { name: "Новорожденная Пчелка 👶", icon: "👶" },
-            { name: "Пчела-Ученик 🎒", icon: "🎒" }, { name: "Рабочая Пчела 🛠️", icon: "🛠️" },
-            { name: "Сборщик Нектара 🌸", icon: "🌸" }, { name: "Охранник Летка ⚔️", icon: "⚔️" },
-            { name: "Старший Добытчик 🍯", icon: "🍯" }, { name: "Разведчик Роя 🔭", icon: "🔭" },
-            { name: "Строитель Воска 🏗️", icon: "🏗️" }, { name: "Железная Пчела 🦾", icon: "🦾" },
-            { name: "Пчела-Воин 🎖️", icon: "🎖️" }, { name: "Элитный Гвардеец 🛡️", icon: "🛡️" },
-            { name: "Рыцарь Нектара 🐴", icon: "🐴" }, { name: "Бизнес-Пчела 💼", icon: "💼" },
-            { name: "Управляющий Сотами 📈", icon: "📈" }, { name: "Директор Улья 👔", icon: "👔" },
-            { name: "Крипто-Майнер 💻", icon: "💻" }, { name: "Кибер-Пчела 🤖", icon: "🤖" },
-            { name: "Повелитель Воска 👑", icon: "👑" }, { name: "Техно-Маг Роя 🔮", icon: "🔮" },
-            { name: "Советник Королевы 📜", icon: "📜" }, { name: "Принц Роя 💎", icon: "💎" },
-            { name: "Король Улья 👑", icon: "👑" }, { name: "Владыка Меда 🔱", icon: "🔱" },
-            { name: "Страж Галактики 🌌", icon: "🌌" }, { name: "Космический Воин 🚀", icon: "🚀" },
-            { name: "Звездный Лорд 🪐", icon: "🪐" }, { name: "Император Роя 🛸", icon: "🛸" }
-        ];
+    <div class="menu">
+        <div class="menu-item">🐝 Клик</div>
+        <div class="menu-item">📊 Соты</div>
+        <div class="menu-item">⚡ Бусты</div>
+        <div class="menu-item">👥 Друзья</div>
+    </div>
 
-        if (window.Telegram?.WebApp) { 
-            window.Telegram.WebApp.ready(); 
-            window.Telegram.WebApp.expand(); 
-        } 
-        
-        function switchTab(tabId, el) { 
-            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active')); 
-            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active')); 
-            document.getElementById(`page-${tabId}`).classList.add('active'); 
-            el.classList.add('active'); 
-        } 
-        
-        async function syncUser() { 
-            try { 
-                const response = await fetch(`${BACKEND_URL}/api/user/sync`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ telegramId }) 
-                }); 
-                const data = await response.json(); 
-                if (data.success) { 
-                    user = data.user; 
-                    visualBalance = user.balance; 
-                    updateUI(); 
-                    startPassiveMiningTimer(); 
-                } 
-            } catch (error) { 
-                console.error("Ошибка синхронизации данных:", error); 
-            } 
-        } 
-        
-        function handleTap() { 
-            if (!user) return; 
-            const energyCost = user.multitapLevel; 
-            if (user.energy < energyCost) return; 
-            
-            user.energy -= energyCost; 
-            visualBalance += energyCost; 
-            user.totalEarned += energyCost; 
-            localClicksQueue += 1; 
-            
-            updateUI(); 
-            
-            clearTimeout(clickTimeout); 
-            clickTimeout = setTimeout(sendClicksBatchToServer, 2500); 
-        } 
-        
-        async function sendClicksBatchToServer() { 
-            if (localClicksQueue === 0) return; 
-            const sendCount = localClicksQueue; 
-            localClicksQueue = 0; 
-            try { 
-                const response = await fetch(`${BACKEND_URL}/api/user/click`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ telegramId, clicksCount: sendCount }) 
-                }); 
-                const data = await response.json(); 
-                if (data.success) { 
-                    user = data.user; 
-                    visualBalance = user.balance; 
-                    updateUI(); 
-                } 
-            } catch (error) { 
-                console.error("Ошибка отправки пакета кликов:", error); 
-                localClicksQueue += sendCount; 
-            } 
+    <script>
+        // ⚠️ ЗАМЕНИТЕ ЭТУ ССЫЛКУ НА URL ВАШЕГО БЭКЕНДА НА RENDER!
+        const API_URL = "https://ds3343366-hue.github.io/clicker-frontend/"; 
+
+        // Получение Telegram ID из WebApp контекста
+        let telegramId = "123456789"; 
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+            const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+            if (tgUser) telegramId = tgUser.id.toString();
         }
-                async function buyCard(cardId) { 
-            if (!user) return; 
-            if (localClicksQueue > 0) await sendClicksBatchToServer(); 
-            try { 
-                const response = await fetch(`${BACKEND_URL}/api/user/buy-card`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ telegramId, cardId }) 
-                }); 
-                const data = await response.json(); 
-                if (data.success) { 
-                    user = data.user; 
-                    visualBalance = user.balance; 
-                    updateUI(); 
-                } else { 
-                    alert(data.error || "Недостаточно мёда!"); 
-                } 
-            } catch (error) { 
-                console.error("Ошибка покупки карточки:", error); 
-            } 
-        } 
-        
-        async function upgradeStat(type) { 
-            if (!user) return; 
-            let cost = 0; 
-            if (type === 'multitap') cost = user.multitapLevel * 200; 
-            else if (type === 'energy') cost = user.energyLimitLevel * 300; 
-            else if (type === 'offline') cost = user.offlineMiningLevel * 500; 
-            
-            if (visualBalance < cost) { 
-                alert("Недостаточно мёда!"); 
-                return; 
-            } 
-            if (localClicksQueue > 0) await sendClicksBatchToServer(); 
-            try { 
-                const response = await fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ telegramId, type, cost }) 
-                }); 
-                const data = await response.json(); 
-                if (data.success) { 
-                    user = data.user; 
-                    visualBalance = user.balance; 
-                    updateUI(); 
-                } 
-            } catch (error) { 
-                console.error("Ошибка прокачки стата:", error); 
-            } 
-        } 
-        
-        // 3-часовое плавное восстановление энергии (ПОЛНОСТЬЮ ИСПРАВЛЕНО)
-        function startPassiveMiningTimer() { 
-            setInterval(() => { 
-                if (!user) return; 
-                const totalHourlyProfit = user.profitPerHour + ((user.offlineMiningLevel - 1) * 50); 
-                if (totalHourlyProfit > 0) { 
-                    const profitPerSecond = totalHourlyProfit / 3600; 
-                    visualBalance += profitPerSecond; 
-                    user.totalEarned += profitPerSecond;
-                } 
-                if (user.energy < user.maxEnergy) { 
-                    const recoveryPerSecond = user.maxEnergy / 10800; 
-                    user.energy = Math.min(user.maxEnergy, user.energy + recoveryPerSecond); 
-                } 
-                updateUI(); 
-            }, 1000); 
-        } 
-        
-        function updateUI() { 
-            if (!user) return; 
-            
-            let currentLvl = 1;
-            let currentLevelExpBase = LEVEL_EXP_BASES[0];
-            let previousLevelExpBase = 0;
 
-            for (let i = 0; i < MAX_LEVELS; i++) {
-                if (user.totalEarned >= LEVEL_EXP_BASES[i]) {
-                    currentLvl = i + 2;
-                    previousLevelExpBase = LEVEL_EXP_BASES[i];
-                    currentLevelExpBase = LEVEL_EXP_BASES[i + 1] || LEVEL_EXP_BASES[i] * 1.2;
-                } else {
-                    currentLevelExpBase = LEVEL_EXP_BASES[i];
-                    break;
+        // Внутреннее состояние игры на фронтенде
+        let gameState = {
+            balance: 0,
+            totalEarned: 0,
+            level: 1,
+            profitPerHour: 0,
+            energy: 1000,
+            maxEnergy: 1000,
+            multitapLevel: 1,
+            energyLimitLevel: 1,
+            offlineMiningLevel: 1,
+            purchasedCards: []
+        };
+
+        const CARDS_CONFIG = {
+            ceo_card: { basePrice: 100 },
+            marketing_card: { basePrice: 500 },
+            crypto_card: { basePrice: 2000 }
+        };
+
+        // 1. Первая инициализация и получение данных из MongoDB
+        async function syncWithBackend() {
+            try {
+                const response = await fetch(`${https://ds3343366-hue.github.io/clicker-frontend/}/user/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    gameState = data.user;
+                    if (data.earnedOffline > 0) {
+                        alert(`Пока вас не было, соты добыли: +${data.earnedOffline} 🍯 мёда!`);
+                    }
+                    updateUI();
                 }
+            } catch (err) {
+                console.error("Ошибка первичной синхронизации:", err);
             }
-            if(currentLvl > MAX_LEVELS) currentLvl = MAX_LEVELS;
+        }
 
-            const expInCurrentLevel = Math.max(0, Math.floor(user.totalEarned - previousLevelExpBase));
-            const expNeededForNextLevel = Math.floor(currentLevelExpBase - previousLevelExpBase);
-            let progressPercent = (expInCurrentLevel / expNeededForNextLevel) * 100;
-            if (progressPercent > 100) progressPercent = 100;
-
-            const skinIndex = Math.min(currentLvl - 1, BEE_SKINS.length - 1);
-            const activeSkin = BEE_SKINS[skinIndex];
-            
-            document.getElementById("level-title-display").innerText = `Ранг: ${activeSkin.name}`;
-            document.getElementById("level-num-display").innerText = `Ур. ${currentLvl} / ${MAX_LEVELS}`;
-            document.getElementById("progress-fill").style.width = `${progressPercent}%`;
-            document.getElementById("progress-numerical").innerText = `${Math.floor(user.totalEarned)} / ${Math.floor(currentLevelExpBase)}`;
-            document.getElementById("bee-tap-btn").innerText = activeSkin.icon;
-
-            // Динамический цвет неонового кольца (Красный -> Желтый -> Зеленый)
-            const energyRatio = user.energy / user.maxEnergy;
-            let ringColor = "#ff3b30"; 
-            if (energyRatio > 0.7) {
-                ringColor = "#34c759"; 
-            } else if (energyRatio > 0.3) {
-                ringColor = "#ffcc00"; 
+        // 2. Обработка тапа по пчеле
+        let accumulatedClicks = 0;
+        document.getElementById("bee-click").addEventListener("click", () => {
+            const clickPower = gameState.multitapLevel;
+            if (gameState.energy >= clickPower) {
+                gameState.energy -= clickPower;
+                gameState.balance += clickPower;
+                gameState.totalEarned += clickPower;
+                accumulatedClicks += 1;
+                updateUI();
             }
-            const ringEl = document.getElementById("neon-ring");
-            ringEl.style.borderColor = ringColor;
-            ringEl.style.boxShadow = `0 0 20px ${ringColor}`;
+        });
 
-            document.getElementById("balance-display").innerText = Math.floor(visualBalance); 
-            document.getElementById("energy-display").innerText = `${Math.floor(user.energy)} / ${user.maxEnergy}`; 
-            document.getElementById("tap-profit-display").innerText = `+${user.multitapLevel}`; 
+        // Отправка кликов пачками раз в 3 секунды
+        setInterval(async () => {
+            if (accumulatedClicks === 0) return;
+            const clicksToSend = accumulatedClicks;
+            accumulatedClicks = 0;
             
-            const totalHourlyProfit = user.profitPerHour + ((user.offlineMiningLevel - 1) * 50); 
-            document.getElementById("passive-display").innerText = `${totalHourlyProfit}/ч`; 
+            try {
+                const response = await fetch(`${https://ds3343366-hue.github.io/clicker-frontend/}/user/click`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId, clicksCount: clicksToSend })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    gameState = data.user;
+                    updateUI();
+                }
+            } catch (err) {
+                console.error("Ошибка сохранения кликов:", err);
+            }
+        }, 3000);
+        // 3. Покупка Бизнес-Сот (Майнинг)
+        async function buyCard(cardId) {
+            try {
+                const response = await fetch(`${https://ds3343366-hue.github.io/clicker-frontend/}/user/buy-card`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId, cardId })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    gameState = data.user;
+                    updateUI();
+                } else {
+                    alert(data.error || "Недостаточно мёда!");
+                }
+            } catch (err) {
+                console.error("Ошибка покупки Бизнес-Соты:", err);
+            }
+        }
+
+        // 4. Покупка Инженерии (Бусты)
+        async function upgradeStat(type, currentCost) {
+            let currentLvl = 1;
+            if (type === 'multitap') currentLvl = gameState.multitapLevel;
+            if (type === 'energy') currentLvl = gameState.energyLimitLevel;
+            if (type === 'offline') currentLvl = gameState.offlineMiningLevel;
             
-            document.getElementById("price-multitap").innerText = user.multitapLevel * 200; 
-            document.getElementById("lvl-multitap").innerText = `Ур. ${user.multitapLevel}`; 
-            document.getElementById("price-energy").innerText = user.energyLimitLevel * 300; 
-            document.getElementById("lvl-energy").innerText = `Ур. ${user.energyLimitLevel}`; 
-            document.getElementById("price-offline").innerText = user.offlineMiningLevel * 500; 
-            document.getElementById("lvl-offline").innerText = `Ур. ${user.offlineMiningLevel}`; 
+            const dynamicCost = Math.floor(currentCost * Math.pow(1.5, currentLvl - 1));
+
+            try {
+                const response = await fetch(`${https://ds3343366-hue.github.io/clicker-frontend/}/user/upgrade-stat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId, type, cost: dynamicCost })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    gameState = data.user;
+                    updateUI();
+                } else {
+                    alert(data.error || "Недостаточно мёда!");
+                }
+            } catch (err) {
+                console.error("Ошибка улучшения буста:", err);
+            }
+        }
+
+        // 5. Ежесекундное визуальное начисление пассивного дохода и энергии
+        setInterval(() => {
+            if (gameState.profitPerHour > 0) {
+                const profitPerSecond = gameState.profitPerHour / 3600;
+                gameState.balance += profitPerSecond;
+                gameState.totalEarned += profitPerSecond;
+            }
             
-            const getCardLvl = (id) => { 
-                const found = user.purchasedCards.find(c => c.cardId === id); 
-                return found ? found.level : 0; 
-            }; 
+            if (gameState.energy < gameState.maxEnergy) {
+                const recoveryPerSecond = gameState.maxEnergy / 10800; 
+                gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + recoveryPerSecond);
+            }
             
-            const ceoLvl = getCardLvl('ceo_card'); 
-            document.getElementById("lvl-ceo_card").innerText = `Уровень ${ceoLvl}`; 
-            document.getElementById("price-ceo_card").innerText = Math.floor(100 * Math.pow(1.5, ceoLvl)); 
+            updateUI();
+        }, 1000);
+
+        // 6. Фоновое резервное сохранение раз в 15 секунд
+        setInterval(async () => {
+            try {
+                await fetch(`${https://ds3343366-hue.github.io/clicker-frontend/}/user/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId })
+                });
+            } catch (e) {
+                console.log("Фоновое сохранение пропущено");
+            }
+        }, 15000);
+
+        // 7. Обновление интерфейса на экране
+        function updateUI() {
+            document.getElementById("balance-display").innerText = Math.floor(gameState.balance);
+            document.getElementById("total-earned-display").innerText = Math.floor(gameState.totalEarned);
+            document.getElementById("passive-display").innerText = gameState.profitPerHour;
+            document.getElementById("level-display").innerText = gameState.level;
+            document.getElementById("click-power-display").innerText = gameState.multitapLevel;
+            document.getElementById("energy-display").innerText = `${Math.floor(gameState.energy)} / ${gameState.maxEnergy}`;
             
-            const mktLvl = getCardLvl('marketing_card'); 
-            document.getElementById("lvl-marketing_card").innerText = `Уровень ${mktLvl}`; 
-            document.getElementById("price-marketing_card").innerText = Math.floor(500 * Math.pow(1.5, mktLvl)); 
+            // Бусты
+            document.getElementById("lvl-multitap").innerText = gameState.multitapLevel;
+            document.getElementById("lvl-energy").innerText = gameState.energyLimitLevel;
+            document.getElementById("lvl-offline").innerText = gameState.offlineMiningLevel;
             
-            const cryptoLvl = getCardLvl('crypto_card'); 
-            document.getElementById("lvl-crypto_card").innerText = `Уровень ${cryptoLvl}`; 
-            document.getElementById("price-crypto_card").innerText = Math.floor(2000 * Math.pow(1.5, cryptoLvl)); 
-            
-            document.getElementById("ref-count-display").innerText = user.referrals ? user.referrals.length : 0; 
-            
-            const refListHtml = user.referrals && user.referrals.length > 0 ? user.referrals.map(ref => `
-                <div class="card">
-                    <div class="card-info">
-                        <strong>🐝 @${ref.username || 'Пчёлка'}</strong>
-                        <span>Статус: Бонус получен (+5000 🍯)</span>
-                    </div>
-                </div>
-            `).join('') : '<p>В вашем рое пока пусто... Нажмите кнопку выше!</p>'; 
-            document.getElementById("referrals-list").innerHTML = refListHtml; 
-        } 
-        
-        // Полностью исправленные реферальные функции с Telegram API
-        function getBotRefLink() { 
-            return `https://t.me{telegramId}`; 
-        } 
-        
-        function inviteFriend() { 
-            const url = `https://t.me{encodeURIComponent(getBotRefLink())}&text=${encodeURIComponent("Присоединяйся к моему пчелиному рою в Hive Clicker! 🐝 Получи 5,000 мёда на старт!")}`; 
-            if (window.Telegram?.WebApp) { 
-                window.Telegram.WebApp.openTelegramLink(url); 
-            } else { 
-                window.open(url, '_blank'); 
-            } 
-        } 
-        
-        function copyRefLink() { 
-            navigator.clipboard.writeText(getBotRefLink()).then(() => { 
-                alert("Ссылка скопирована! 📋"); 
-            }); 
-        } 
-        
-        document.getElementById("bee-tap-btn").addEventListener("click", handleTap); 
-        syncUser();
+            document.getElementById("price-multitap").innerText = Math.floor(200 * Math.pow(1.5, gameState.multitapLevel - 1));
+            document.getElementById("price-energy").innerText = Math.floor(300 * Math.pow(1.5, gameState.energyLimitLevel - 1));
+            document.getElementById("price-offline").innerText = Math.floor(500 * Math.pow(1.5, gameState.offlineMiningLevel - 1));
+
+            // Бизнес-соты
+            Object.keys(CARDS_CONFIG).forEach(cardId => {
+                const card = gameState.purchasedCards.find(c => c.cardId === cardId);
+                const currentLevel = card ? card.level : 0;
+                const nextPrice = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLevel));
+                
+                document.getElementById(`lvl-${cardId}`).innerText = currentLevel;
+                document.getElementById(`price-${cardId}`).innerText = nextPrice;
+            });
+        }
+
+        // Старт игры
+        window.onload = syncWithBackend;
     </script>
 </body>
 </html>
-
-
-
-
 
