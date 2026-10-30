@@ -73,7 +73,7 @@
     </div>
 
     <div id="tab-boosts" class="tab-content">
-        <h3 style="color: #ffcc00;">Инженерия Unия ⚡</h3>
+        <h3 style="color: #ffcc00;">Инженерия Улья ⚡</h3>
         <div class="card">
             <button onclick="upgradeStat('multitap', 200)">💰 <span id="price-multitap">200</span></button>
             <strong>👆 Мульти-Тап</strong><br>
@@ -111,10 +111,10 @@
     </div>
 
     <script>
-        // ⚠️ ВАЖНО: Укажи здесь точный URL твоего сервера Render!
+        // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
         
-        // ⚠️ ВАЖНО: Замени на юзернейм твоего бота БЕЗ значка @
+        // ⚠️ ВАЖНО: Укажите юзернейм вашего бота БЕЗ значка @ (например: "BeeGameBot")
         const BOT_USERNAME = "richmining_bot"; 
 
         let telegramId = "123456789"; 
@@ -251,19 +251,25 @@
             } catch (err) { console.log("Буст сохранен локально"); }
         }
 
-        // БЕЗОПАСНАЯ И НАДЁЖНАЯ ГЕНЕРАЦИЯ ССЫЛКИ
+        // ЖЕЛЕЗНЫЙ МЕТОД ПОДЕЛИТЬСЯ ССЫЛКОЙ
         function copyInviteLink() {
-            const link = `https://t.me{BOT_USERNAME}?start=ref${telegramId}`;
+            // Настоящая реферальная ссылка
+            const link = "https://t.me" + BOT_USERNAME + "?start=ref" + telegramId;
             
-            // Если игра открыта в Telegram WebApp, используем родной метод мессенджера
+            // Копируем ссылку в буфер обмена телефона
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(link);
+            }
+
+            // Родной шлюз шеринга Telegram: открывает список чатов мессенджера для отправки ссылки
+            const shareUrl = "https://t.meshare/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей и качай пчел! Получи стартовый бонус мёда 🍯🐝");
+            
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-                // Копируем в буфер обмена
-                navigator.clipboard.writeText(link);
-                // И сразу предлагаем поделиться ссылкой прямо внутри Telegram!
-                window.Telegram.WebApp.openTelegramLink(`https://t.me{encodeURIComponent(link)}&text=${encodeURIComponent("Присоединяйся к моему пчелиному улью! 🐝🍯")}`);
+                // Если мы внутри WebApp, вызываем защищенный внутренний обработчик Telegram
+                window.Telegram.WebApp.openTelegramLink(shareUrl);
             } else {
-                navigator.clipboard.writeText(link);
-                alert("Реферальная ссылка скопирована! 📋");
+                // Если тест в обычном браузере
+                window.open(shareUrl, '_blank');
             }
         }
 
