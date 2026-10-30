@@ -254,7 +254,7 @@
         // ЖЕЛЕЗНЫЙ МЕТОД ПОДЕЛИТЬСЯ ССЫЛКОЙ
         function copyInviteLink() {
             // Настоящая реферальная ссылка
-            const link = "https://t.me" + BOT_USERNAME + "?start=ref" + telegramId;
+            const link = "https://t.me" + /BOT_USERNAME/ + "?start=ref" + telegramId;
             
             // Копируем ссылку в буфер обмена телефона
             if (navigator.clipboard && navigator.clipboard.writeText) {
