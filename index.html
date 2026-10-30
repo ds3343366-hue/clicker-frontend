@@ -286,14 +286,26 @@
         }
 
         // РАБОЧАЯ РЕФЕРАЛЬНАЯ ССЫЛКА
+                // УНИВЕРСАЛЬНАЯ РЕФЕРАЛЬНАЯ ССЫЛКА
         function copyInviteLink() {
-            const link = `https://t.me/{BOT_USERNAME}/?start=ref${telegramId}`;
+            // Этот формат ссылки заставит телефон сразу открыть приложение Telegram внутри диалога с ботом
+            const link = `tg://resolve?domain=${BOT_USERNAME}&start=ref${telegramId}`;
             
-            // Метод копирования, работающий и в Telegram, и в обычном браузере
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(link).then(() => {
                     alert("Реферальная ссылка скопирована в буфер! 📋");
                 });
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = link;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textArea);
+                alert("Ссылка скопирована! 📋");
+            }
+        }
+
             } else {
                 // Запасной вариант для старых WebView на Android
                 const textArea = document.createElement("textarea");
