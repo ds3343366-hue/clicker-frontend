@@ -132,7 +132,12 @@
 
     <script>
         // ⚠️ ЗАМЕНИТЕ ЭТУ ССЫЛКУ НА URL ВАШЕГО СЕРВЕРА RENDER!
+               // ⚠️ ВАЖНО: Укажи здесь точный URL твоего сервера Render!
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
+        
+        // ⚠️ ВАЖНО: Замени "your_bot_username" на точное имя твоего Телеграм-бота (без значка @)
+        // Пример: const BOT_USERNAME = "BeeHiveClickerBot";
+        const BOT_USERNAME = "richmining_bot"; 
 
         let telegramId = "123456789"; 
         try {
@@ -144,7 +149,9 @@
             }
         } catch(e) { console.log("Запуск вне Telegram"); }
 
-        let gameState = {
+        // ПРОВЕРКА LOCALSTORAGE: Загружаем сохраненный результат до ответа сервера, чтобы баланс не сбрасывался!
+        let localData = localStorage.getItem(`bee_game_state_${telegramId}`);
+        let gameState = localData ? JSON.parse(localData) : {
             balance: 0, totalEarned: 0, level: 1, profitPerHour: 0,
             energy: 1000, maxEnergy: 1000, multitapLevel: 1,
             energyLimitLevel: 1, offlineMiningLevel: 1, purchasedCards: [], referrals: []
@@ -153,7 +160,6 @@
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
 
-        // Полностью исправленная функция переключения вкладок
         function switchTab(tabId, menuItem) {
             try {
                 document.querySelectorAll('.tab-content').forEach(tab => {
@@ -172,6 +178,11 @@
                 if (menuItem) menuItem.classList.add('active');
             } catch (err) { console.error("Ошибка вкладок:", err); }
         }
+
+        // Сохранение состояния в память телефона/браузера
+        function saveToLocal() {
+            localStorage.setItem(`bee_game_state_${telegramId}`, JSON.stringify(gameState));
+        }
                 async function syncWithBackend() {
             try {
                 const response = await fetch(`${API_URL}/user/sync`, {
@@ -182,12 +193,13 @@
                 const data = await response.json();
                 if (data.success) {
                     gameState = data.user;
+                    saveToLocal(); // Обновляем локальную копию данными из базы
                     if (data.earnedOffline > 0) {
                         alert(`Пчёлы трудились! Добыто офлайн: +${data.earnedOffline} 🍯`);
                     }
                 }
             } catch (err) { 
-                console.log("⚠️ Автономный локальный режим игры. Сервер Render недоступен.");
+                console.log("⚠️ Сервер Render спит. Игра работает на локальном сохранении.");
             }
             updateUI();
         }
@@ -200,21 +212,25 @@
                 gameState.balance += clickPower;
                 gameState.totalEarned += clickPower;
                 accumulatedClicks += 1;
+                saveToLocal(); // Мгновенно сохраняем каждый тап локально
                 updateUI();
             }
         });
 
+        // Отправка кликов на сервер пачками раз в 3 секунды
         setInterval(async () => {
             if (accumulatedClicks === 0) return;
             const clicksToSend = accumulatedClicks;
             accumulatedClicks = 0;
             try {
-                await fetch(`${API_URL}/user/click`, {
+                const response = await fetch(`${API_URL}/user/click`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ telegramId, clicksCount: clicksToSend })
                 });
-            } catch (err) { console.log("Фоновое сохранение кликов ожидает сеть"); }
+                const data = await response.json();
+                if (data.success) { gameState = data.user; saveToLocal(); }
+            } catch (err) { console.log("Синхронизация кликов с сервером отложена"); }
         }, 3000);
 
         async function buyCard(cardId) {
@@ -224,9 +240,11 @@
             
             if (gameState.balance < price) { alert("Недостаточно мёда! 🍯"); return; }
 
+            // Мгновенный локальный апгрейд
             gameState.balance -= price;
             gameState.profitPerHour += (cardId === 'ceo_card' ? 10 : cardId === 'marketing_card' ? 45 : 200);
             if (card) { card.level += 1; } else { gameState.purchasedCards.push({cardId, level: 1}); }
+            saveToLocal();
             updateUI();
 
             try {
@@ -236,8 +254,8 @@
                     body: JSON.stringify({ telegramId, cardId })
                 });
                 const data = await response.json();
-                if (data.success) { gameState = data.user; updateUI(); }
-            } catch (err) { console.log("Покупка сохранена локально"); }
+                if (data.success) { gameState = data.user; saveToLocal(); updateUI(); }
+            } catch (err) { console.log("Покупка зафиксирована локально"); }
         }
 
         async function upgradeStat(type, currentCost) {
@@ -253,6 +271,7 @@
             if (type === 'multitap') gameState.multitapLevel += 1;
             if (type === 'energy') { gameState.energyLimitLevel += 1; gameState.maxEnergy += 500; gameState.energy = gameState.maxEnergy; }
             if (type === 'offline') gameState.offlineMiningLevel += 1;
+            saveToLocal();
             updateUI();
 
             try {
@@ -262,16 +281,32 @@
                     body: JSON.stringify({ telegramId, type, cost: price })
                 });
                 const data = await response.json();
-                if (data.success) { gameState = data.user; updateUI(); }
+                if (data.success) { gameState = data.user; saveToLocal(); updateUI(); }
             } catch (err) { console.log("Буст сохранен локально"); }
         }
 
+        // РАБОЧАЯ РЕФЕРАЛЬНАЯ ССЫЛКА
         function copyInviteLink() {
-            const link = `https://t.me{telegramId}`;
-            navigator.clipboard.writeText(link);
-            alert("Ссылка скопирована! 📋");
+            const link = `https://t.me{BOT_USERNAME}?start=ref${telegramId}`;
+            
+            // Метод копирования, работающий и в Telegram, и в обычном браузере
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(link).then(() => {
+                    alert("Реферальная ссылка скопирована в буфер! 📋");
+                });
+            } else {
+                // Запасной вариант для старых WebView на Android
+                const textArea = document.createElement("textarea");
+                textArea.value = link;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textArea);
+                alert("Ссылка скопирована! 📋");
+            }
         }
 
+        // Ежесекундный таймер
         setInterval(() => {
             if (gameState.profitPerHour > 0) {
                 const pps = gameState.profitPerHour / 3600;
@@ -282,6 +317,8 @@
                 const rps = gameState.maxEnergy / 10800;
                 gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + rps);
             }
+            // Каждую секунду локально сохраняем набежавший пассивный доход
+            saveToLocal();
             updateUI();
         }, 1000);
 
@@ -331,10 +368,13 @@
 
         window.onload = () => {
             switchTab('click', document.querySelector('.menu-item'));
-            syncWithBackend();
+            updateUI(); // Сразу рисуем UI из localStorage
+            syncWithBackend(); // Затем мягко обновляем данные из MongoDB Atlas
         };
     </script>
 </body>
 </html>
+
+               
 
 
