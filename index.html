@@ -71,6 +71,20 @@
             <div class="clear"></div>
         </div>
     </div>
+        <!-- ВКЛАДКА 2: СОТЫ (МАЙНИНГ) -->
+    <div id="tab-cards" class="tab-content">
+        <h3 style="color: #ffcc00;">Развитие Бизнес-Сот 📊</h3>
+
+        <!-- НОВЫЙ БЛОК: ЕЖЕДНЕВНОЕ КОМБО -->
+        <div class="card" style="border-color: #ffaa00; background: rgba(255, 204, 0, 0.05); text-align: center;">
+            <strong style="color: #ffcc00; font-size: 16px;">🐝 Ежедневное Пчелиное Комбо</strong>
+            <p style="font-size: 12px; color: #aaa; margin: 5px 0;">Найди 2 секретные соты сегодня и получи +250k 🍯</p>
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 10px;">
+                <div id="combo-slot-1" style="width: 50px; height: 50px; background: #222; border: 2px dashed #555; border-radius: 8px; line-height: 50px; font-size: 24px;">❓</div>
+                <div id="combo-slot-2" style="width: 50px; height: 50px; background: #222; border: 2px dashed #555; border-radius: 8px; line-height: 50px; font-size: 24px;">❓</div>
+            </div>
+            <div id="combo-status-text" style="font-size: 13px; color: #ffcc00; margin-top: 8px; font-weight: bold;">Собрано: 0 / 2</div>
+        </div>
 
     <div id="tab-boosts" class="tab-content">
         <h3 style="color: #ffcc00;">Инженерия Улья ⚡</h3>
@@ -204,26 +218,48 @@
             } catch (err) { console.log("Синхронизация кликов отложена"); }
         }, 3000);
 
-        async function buyCard(cardId) {
+                async function buyCard(cardId) {
             const card = gameState.purchasedCards.find(c => c.cardId === cardId);
             const currentLevel = card ? card.level : 0;
             const price = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLevel));
+            
             if (gameState.balance < price) { alert("Недостаточно мёда! 🍯"); return; }
 
+            // Мгновенный локальный апгрейд для отзывчивости
             gameState.balance -= price;
             gameState.profitPerHour += (cardId === 'ceo_card' ? 10 : cardId === 'marketing_card' ? 45 : 200);
             if (card) { card.level += 1; } else { gameState.purchasedCards.push({cardId, level: 1}); }
             saveToLocal(); updateUI();
 
             try {
+                // 1. Отправляем запрос на покупку карты
                 const response = await fetch(`${API_URL}/user/buy-card`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ telegramId, cardId })
                 });
                 const data = await response.json();
-                if (data.success) { gameState = data.user; saveToLocal(); updateUI(); }
-            } catch (err) { console.log("Покупка сохранена локально"); }
+                if (data.success) { 
+                    gameState = data.user; 
+                    saveToLocal(); 
+                    
+                    // 2. СРАЗУ ЖЕ проверяем, не входит ли эта карта в сегодняшнее Комбо!
+                    const comboResponse = await fetch(`${API_URL}/user/check-combo`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ telegramId, cardId })
+                    });
+                    const comboData = await comboResponse.json();
+                    if (comboData.success) {
+                        gameState = comboData.user;
+                        saveToLocal();
+                        if (comboData.comboCompleted) {
+                            alert(`🎉 УРА! Ты собрал Ежедневное Комбо и получил +${comboData.reward} 🍯 мёда!`);
+                        }
+                    }
+                }
+            } catch (err) { console.log("Покупка и проверка комбо зафиксированы локально"); }
+            updateUI();
         }
 
         async function upgradeStat(type, currentCost) {
@@ -254,7 +290,7 @@
         // ЖЕЛЕЗНЫЙ МЕТОД ПОДЕЛИТЬСЯ ССЫЛКОЙ
         function copyInviteLink() {
             // Настоящая реферальная ссылка
-            const link = "https://t.me" + /BOT_USERNAME/ + "?start=ref" + telegramId;
+            const link = "https://t.me" + BOT_USERNAME + "?start=ref" + telegramId;
             
             // Копируем ссылку в буфер обмена телефона
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -262,7 +298,7 @@
             }
 
             // Родной шлюз шеринга Telegram: открывает список чатов мессенджера для отправки ссылки
-            const shareUrl = "https://t.meshare/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей и качай пчел! Получи стартовый бонус мёда 🍯🐝");
+            const shareUrl = "https://t.meshare/richmining_bot=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей и качай пчел! Получи стартовый бонус мёда 🍯🐝");
             
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
                 // Если мы внутри WebApp, вызываем защищенный внутренний обработчик Telegram
@@ -328,6 +364,46 @@
                 refs.forEach(r => { container.innerHTML += `<div class='card' style='margin:5px auto;'>🐝 <b>${r.username || 'Пчёлка'}</b></div>`; });
             }
         }
+            // Код отрисовки карточек выше...
+            Object.keys(CARDS_CONFIG).forEach(cardId => {
+                const card = gameState.purchasedCards.find(c => c.cardId === cardId);
+                const currentLevel = card ? card.level : 0;
+                document.getElementById(`lvl-${cardId}`).innerText = currentLevel;
+                document.getElementById(`price-${cardId}`).innerText = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLevel));
+            });
+
+            // ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ ЕЖЕДНЕВНОГО КОМБО
+            const todayStr = new Date().toISOString().split('T')[0];
+            const currentCombo = gameState.todayCombo || [];
+            const isCompleted = gameState.lastComboDate === "COMPLETED_" + todayStr;
+
+            const slot1 = document.getElementById("combo-slot-1");
+            const slot2 = document.getElementById("combo-slot-2");
+            const statusText = document.getElementById("combo-status-text");
+
+            if (slot1 && slot2 && statusText) {
+                if (isCompleted) {
+                    slot1.innerText = "🐝"; slot1.style.borderColor = "#00ff66"; slot1.style.background = "rgba(0,255,102,0.1)";
+                    slot2.innerText = "🐝"; slot2.style.borderColor = "#00ff66"; slot2.style.background = "rgba(0,255,102,0.1)";
+                    statusText.innerText = "🎉 КОМБО ВЫПОЛНЕНО! (+250k 🍯)";
+                    statusText.style.color = "#00ff66";
+                } else {
+                    statusText.style.color = "#ffcc00";
+                    statusText.innerText = `Собрано: ${currentCombo.length} / 2`;
+                    
+                    if (currentCombo.length >= 1) {
+                        slot1.innerText = "🐝"; slot1.style.borderColor = "#ffcc00";
+                    } else {
+                        slot1.innerText = "❓"; slot1.style.borderColor = "#555";
+                    }
+                    
+                    if (currentCombo.length >= 2) {
+                        slot2.innerText = "🐝"; slot2.style.borderColor = "#ffcc00";
+                    } else {
+                        slot2.innerText = "❓"; slot2.style.borderColor = "#555";
+                    }
+                }
+            }
 
         window.onload = () => {
             switchTab('click', document.querySelector('.menu-item'));
