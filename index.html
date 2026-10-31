@@ -282,25 +282,25 @@
         }
 
                 // ИСПРАВЛЕННАЯ ФУНКЦИЯ КОПИРОВАНИЯ И ШЕРИНГА ССЫЛКИ
+              // ИСПРАВЛЕННЫЙ И СЕРТИФИЦИРОВАННЫЙ МЕТОД ШЕРИНГА ДЛЯ TELEGRAM
         function copyInviteLink() {
-            // Современный формат создания строки, защищенный от сбоев кодировки
             const link = `https://t.me/richmining_bot/?start=ref${telegramId}`;
             
-            // Копируем ссылку в буфер обмена телефона/ПК
+            // 1. Копируем в буфер обмена (запасной вариант)
             try {
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(link);
                 }
-            } catch (clipErr) { console.log("Прямое копирование недоступно в этом браузере"); }
+            } catch (e) { console.log("Буфер обмена недоступен"); }
 
-            // Создаем официальный URL для шеринга внутри Telegram
-            const shareUrl = `https://t.me{encodeURIComponent(link)}&text=${encodeURIComponent("Залетай в мой пчелиному улей! Получи стартовый бонус мёда 🍯🐝")}`;
+            // 2. Ссылка для открытия окна выбора контактов внутри Telegram
+            const shareUrl = `https://t.me{encodeURIComponent(link)}&text=${encodeURIComponent("Залетай в мой пчелиный улей! Получи стартовый бонус мёда 🍯🐝")}`;
             
-            // Вызываем родной метод мессенджера
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-                window.Telegram.WebApp.openTelegramLink(shareUrl);
+            // ИСПРАВЛЕНО: Для внешних t.me/share ссылок внутри WebApp ТГ требует использовать openLink!
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+                window.Telegram.WebApp.openLink(shareUrl);
             } else {
-                // Запасной вариант для обычного браузера
+                // Если тестируем в обычном браузере на ПК
                 window.open(shareUrl, '_blank');
             }
         }
