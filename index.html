@@ -115,7 +115,6 @@
         <div id="friends-list" style="max-height: 220px; overflow-y: auto;"></div>
     </div>
 
-    <!-- НАВИГАЦИОННЫЕ ТАБЫ -->
     <div class="menu">
         <div class="menu-item active" onclick="switchTab('click', this)">🐝 Клик</div>
         <div class="menu-item" onclick="switchTab('cards', this)">📊 Соты</div>
@@ -136,8 +135,22 @@
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.ready();
                 window.Telegram.WebApp.expand();
+                
                 const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
-                if (tgUser) { telegramId = tgUser.id.toString(); isTelegram = true; }
+                if (tgUser) {
+                    telegramId = tgUser.id.toString();
+                    isTelegram = true;
+                } else if (window.Telegram.WebApp.initData) {
+                    const searchParams = new URLSearchParams(window.Telegram.WebApp.initData);
+                    const userParam = searchParams.get('user');
+                    if (userParam) {
+                        const parsedUser = JSON.parse(userParam);
+                        if (parsedUser && parsedUser.id) {
+                            telegramId = parsedUser.id.toString();
+                            isTelegram = true;
+                        }
+                    }
+                }
             }
         } catch(e) { console.log("Запуск вне мессенджера"); }
 
@@ -152,18 +165,10 @@
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
                 function switchTab(tabId, menuItem) {
             try {
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.style.display = 'none';
-                    tab.classList.remove('active');
-                });
-                document.querySelectorAll('.menu-item').forEach(item => {
-                    item.classList.remove('active');
-                });
+                document.querySelectorAll('.tab-content').forEach(tab => { tab.style.display = 'none'; tab.classList.remove('active'); });
+                document.querySelectorAll('.menu-item').forEach(item => { item.classList.remove('active'); });
                 const targetTab = document.getElementById(`tab-${tabId}`);
-                if (targetTab) {
-                    targetTab.style.display = 'block';
-                    targetTab.classList.add('active');
-                }
+                if (targetTab) { targetTab.style.display = 'block'; targetTab.classList.add('active'); }
                 if (menuItem) menuItem.classList.add('active');
             } catch (err) { console.error("Ошибка вкладок:", err); }
         }
@@ -172,55 +177,19 @@
             const stateStr = JSON.stringify(gameState);
             localStorage.setItem(`bee_game_state_${telegramId}`, stateStr); 
             if (isTelegram && window.Telegram.WebApp.CloudStorage) {
-                window.Telegram.WebApp.CloudStorage.setItem(`bee_state_${telegramId}`, stateStr, (err) => {
-                    if (err) console.log("Сбой CloudStorage");
-                });
+                window.Telegram.WebApp.CloudStorage.setItem("bee_hive_game_save", stateStr, (err) => {});
             }
         }
 
-                // ИСПРАВЛЕНО: Пуленепробиваемый алгоритм загрузки для ПК и телефонов одновременно
         function loadGameAndSync() {
-            // 1. Сначала мгновенно выводим локальный сейв, если он есть
             const localData = localStorage.getItem(`bee_game_state_${telegramId}`);
-            if (localData) {
-                gameState = JSON.parse(localData);
-                updateUI();
-                calculateLocalOffline();
-            }
-
-            // Флаг, чтобы не делать двойной запрос к бэкенду
-            let backendSynced = false;
-
-            // Тайм-аут: если ПК-версия Telegram зависла и не отвечает по CloudStorage за 800мс,
-            // мы принудительно идём напрямую в MongoDB Atlas на Render!
-            const cloudTimeout = setTimeout(() => {
-                if (!backendSynced) {
-                    console.log("🤖 CloudStorage на ПК не ответил. Запрашиваем MongoDB Atlas напрямую...");
-                    syncWithBackend();
-                    backendSynced = true;
-                }
-            }, 800);
-
-            // 2. Параллельно запрашиваем вечное Облако (для телефонов)
+            if (localData) { gameState = JSON.parse(localData); updateUI(); calculateLocalOffline(); }
             if (isTelegram && window.Telegram.WebApp.CloudStorage) {
                 window.Telegram.WebApp.CloudStorage.getItem("bee_hive_game_save", (err, value) => {
-                    clearTimeout(cloudTimeout); // Отменяем тайм-аут, если облако ответило
-                    if (!backendSynced) {
-                        if (!err && value) { 
-                            gameState = JSON.parse(value); 
-                            updateUI(); 
-                        }
-                        syncWithBackend(); // Синхронизируем актуальные данные с MongoDB
-                        backendSynced = true;
-                    }
-                });
-            } else {
-                clearTimeout(cloudTimeout);
-                if (!backendSynced) {
+                    if (!err && value) { gameState = JSON.parse(value); updateUI(); }
                     syncWithBackend();
-                    backendSynced = true;
-                }
-            }
+                });
+            } else { syncWithBackend(); }
         }
 
         function calculateLocalOffline() {
@@ -233,8 +202,7 @@
                         const profitPerSecond = gameState.profitPerHour / 3600;
                         const localOfflineEarned = Math.floor(activeSeconds * profitPerSecond);
                         if (localOfflineEarned > 0) {
-                            gameState.balance += localOfflineEarned;
-                            gameState.totalEarned += localOfflineEarned;
+                            gameState.balance += localOfflineEarned; gameState.totalEarned += localOfflineEarned;
                             alert(`Пока улей был закрыт, пчёлы намайнили: +${localOfflineEarned} 🍯`);
                             saveToLocal(); updateUI();
                         }
@@ -242,7 +210,7 @@
                 }
             } catch (e) { console.log("Ошибка расчета офлайна"); }
         }
-        
+
         async function syncWithBackend() {
             try {
                 const response = await fetch(`${API_URL}/user/sync?v=${Date.now()}`, {
@@ -282,31 +250,18 @@
             const currentLevel = card ? card.level : 0;
             const price = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLevel));
             if (gameState.balance < price) { alert("Недостаточно мёда! 🍯"); return; }
-
             gameState.balance -= price;
             gameState.profitPerHour += (cardId === 'ceo_card' ? 10 : cardId === 'marketing_card' ? 45 : 200);
             if (card) { card.level += 1; } else { gameState.purchasedCards.push({ cardId: cardId, level: 1 }); }
             saveToLocal(); updateUI();
-
             try {
-                const response = await fetch(`${API_URL}/user/buy-card`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegramId, cardId })
-                });
+                const response = await fetch(`${API_URL}/user/buy-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
                 const data = await response.json();
                 if (data.success) { 
                     gameState = data.user; saveToLocal(); 
-                    const comboRes = await fetch(`${API_URL}/user/check-combo`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ telegramId, cardId })
-                    });
+                    const comboRes = await fetch(`${API_URL}/user/check-combo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
                     const comboData = await comboRes.json();
-                    if (comboData.success) {
-                        gameState = comboData.user; saveToLocal();
-                        if (comboData.comboCompleted) alert("🎉 Комбо разгадано! Бонус зачислен!");
-                    }
+                    if (comboData.success) { gameState = comboData.user; saveToLocal(); if (comboData.comboCompleted) alert("🎉 Комбо разгадано! Бонус зачислен!"); }
                 }
             } catch (err) {}
             updateUI();
@@ -316,21 +271,14 @@
             let currentLvl = type === 'multitap' ? gameState.multitapLevel : type === 'energy' ? gameState.energyLimitLevel : gameState.offlineMiningLevel;
             const price = Math.floor(currentCost * Math.pow(1.5, currentLvl - 1));
             if (gameState.balance < price) { alert("Недостаточно мёда! 🍯"); return; }
-
             gameState.balance -= price;
             if (type === 'multitap') gameState.multitapLevel += 1;
             if (type === 'energy') { gameState.energyLimitLevel += 1; gameState.maxEnergy += 500; gameState.energy = gameState.maxEnergy; }
             if (type === 'offline') gameState.offlineMiningLevel += 1;
             saveToLocal(); updateUI();
-
             try {
-                const response = await fetch(`${API_URL}/user/upgrade-stat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegramId, type, cost: price })
-                });
-                const data = await response.json();
-                if (data.success) { gameState = data.user; saveToLocal(); }
+                const response = await fetch(`${API_URL}/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: price }) });
+                const data = await response.json(); if (data.success) { gameState = data.user; saveToLocal(); }
             } catch (err) {}
             updateUI();
         }
@@ -339,21 +287,13 @@
             const link = `https://t.me/richmining_bot/?start=ref${telegramId}`;
             if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link); }
             const shareUrl = `https://t.me{encodeURIComponent(link)}&text=${encodeURIComponent("Залетай в мой улей! 🍯🐝")}`;
-            if (isTelegram && window.Telegram.WebApp.openLink) {
-                window.Telegram.WebApp.openLink(shareUrl);
-            } else { window.open(shareUrl, '_blank'); }
+            if (isTelegram && window.Telegram.WebApp.openLink) { window.Telegram.WebApp.openLink(shareUrl); } else { window.open(shareUrl, '_blank'); }
         }
 
         setInterval(() => {
-            if (gameState.profitPerHour > 0) {
-                gameState.balance += (gameState.profitPerHour / 3600);
-                gameState.totalEarned += (gameState.profitPerHour / 3600);
-            }
-            if (gameState.energy < gameState.maxEnergy) {
-                gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + (gameState.maxEnergy / 10800));
-            }
-            localStorage.setItem(`bee_last_sync_${telegramId}`, Date.now().toString());
-            saveToLocal(); updateUI();
+            if (gameState.profitPerHour > 0) { gameState.balance += (gameState.profitPerHour / 3600); gameState.totalEarned += (gameState.profitPerHour / 3600); }
+            if (gameState.energy < gameState.maxEnergy) { gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + (gameState.maxEnergy / 1200)); }
+            localStorage.setItem(`bee_last_sync_${telegramId}`, Date.now().toString()); saveToLocal(); updateUI();
         }, 1000);
 
         function updateUI() {
@@ -368,50 +308,25 @@
             let currentLevelMin = currentLvlIdx > 0 ? BACKEND_LEVELS[currentLvlIdx - 1] : 0;
             let currentLevelMax = BACKEND_LEVELS[currentLvlIdx] || 1000000;
             let progressPercent = Math.max(1, Math.min(100, ((gameState.totalEarned - currentLevelMin) / (currentLevelMax - currentLevelMin)) * 100));
-            
-            const bar = document.getElementById("level-progress");
-            if (bar) { bar.style.width = `${progressPercent}%`; bar.style.backgroundPosition = `${100 - progressPercent}% 0px`; }
+            const bar = document.getElementById("level-progress"); if (bar) { bar.style.width = `${progressPercent}%`; bar.style.backgroundPosition = `${100 - progressPercent}% 0px`; }
 
-            document.getElementById("lvl-multitap").innerText = gameState.multitapLevel;
-            document.getElementById("lvl-energy").innerText = gameState.energyLimitLevel;
-            document.getElementById("lvl-offline").innerText = gameState.offlineMiningLevel;
-            document.getElementById("price-multitap").innerText = Math.floor(200 * Math.pow(1.5, gameState.multitapLevel - 1));
-            document.getElementById("price-energy").innerText = Math.floor(300 * Math.pow(1.5, gameState.energyLimitLevel - 1));
-            document.getElementById("price-offline").innerText = Math.floor(500 * Math.pow(1.5, gameState.offlineMiningLevel - 1));
+            document.getElementById("lvl-multitap").innerText = gameState.multitapLevel; document.getElementById("lvl-energy").innerText = gameState.energyLimitLevel; document.getElementById("lvl-offline").innerText = gameState.offlineMiningLevel;
+            document.getElementById("price-multitap").innerText = Math.floor(200 * Math.pow(1.5, gameState.multitapLevel - 1)); document.getElementById("price-energy").innerText = Math.floor(300 * Math.pow(1.5, gameState.energyLimitLevel - 1)); document.getElementById("price-offline").innerText = Math.floor(500 * Math.pow(1.5, gameState.offlineMiningLevel - 1));
 
             Object.keys(CARDS_CONFIG).forEach(cardId => {
-                const card = gameState.purchasedCards.find(c => c.cardId === cardId);
-                const currentLevel = card ? card.level : 0;
-                document.getElementById(`lvl-${cardId}`).innerText = currentLevel;
-                document.getElementById(`price-${cardId}`).innerText = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLevel));
+                const card = gameState.purchasedCards.find(c => c.cardId === cardId); const currentLevel = card ? card.level : 0;
+                document.getElementById(`lvl-${cardId}`).innerText = currentLevel; document.getElementById(`price-${cardId}`).innerText = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLevel));
             });
 
             const todayStr = new Date().toISOString().split('T');
-            const currentCombo = gameState.todayCombo || [];
-            const isCompleted = gameState.lastComboDate === "COMPLETED_" + todayStr;
-            const slot1 = document.getElementById("combo-slot-1");
-            const slot2 = document.getElementById("combo-slot-2");
-            const statusText = document.getElementById("combo-status-text");
-            
+            const currentCombo = gameState.todayCombo || []; const isCompleted = gameState.lastComboDate === "COMPLETED_" + todayStr;
+            const slot1 = document.getElementById("combo-slot-1"); const slot2 = document.getElementById("combo-slot-2"); const statusText = document.getElementById("combo-status-text");
             if (slot1 && slot2 && statusText) {
-                if (isCompleted) {
-                    slot1.innerText = "🐝"; slot1.style.borderColor = "#00ff66"; slot1.style.background = "rgba(0,255,102,0.1)";
-                    slot2.innerText = "🐝"; slot2.style.borderColor = "#00ff66"; slot2.style.background = "rgba(0,255,102,0.1)";
-                    statusText.innerText = "🎉 КОМБО ВЫПОЛНЕНО! (+250k 🍯)"; statusText.style.color = "#00ff66";
-                } else {
-                    statusText.style.color = "#ffcc00"; statusText.innerText = `Собрано: ${currentCombo.length} / 2`;
-                    slot1.innerText = currentCombo.length >= 1 ? "🐝" : "❓"; slot1.style.borderColor = currentCombo.length >= 1 ? "#ffcc00" : "#555";
-                    slot2.innerText = currentCombo.length >= 2 ? "🐝" : "❓"; slot2.style.borderColor = currentCombo.length >= 2 ? "#ffcc00" : "#555";
-                }
+                if (isCompleted) { slot1.innerText = "🐝"; slot1.style.borderColor = "#00ff66"; slot1.style.background = "rgba(0,255,102,0.1)"; slot2.innerText = "🐝"; slot2.style.borderColor = "#00ff66"; slot2.style.background = "rgba(0,255,102,0.1)"; statusText.innerText = "🎉 КОМБО ВЫПОЛНЕНО! (+250k 🍯)"; statusText.style.color = "#00ff66"; } 
+                else { statusText.style.color = "#ffcc00"; statusText.innerText = `Собрано: ${currentCombo.length} / 2`; slot1.innerText = currentCombo.length >= 1 ? "🐝" : "❓"; slot1.style.borderColor = currentCombo.length >= 1 ? "#ffcc00" : "#555"; slot2.innerText = currentCombo.length >= 2 ? "🐝" : "❓"; slot2.style.borderColor = currentCombo.length >= 2 ? "#ffcc00" : "#555"; }
             }
-
-            const refs = gameState.referrals || [];
-            document.getElementById("referrals-count").innerText = refs.length;
-            const container = document.getElementById("friends-list");
-            if (container) {
-                container.innerHTML = refs.length === 0 ? "<p style='color:#aaa;padding:10px;'>В вашем рое пока пусто</p>" : "";
-                refs.forEach(r => { container.innerHTML += `<div class='card' style='margin:5px auto;'>🐝 <b>${r.username || 'Пчёлка'}</b></div>`; });
-            }
+            const refs = gameState.referrals || []; document.getElementById("referrals-count").innerText = refs.length;
+            const container = document.getElementById("friends-list"); if (container) { container.innerHTML = refs.length === 0 ? "<p style='color:#aaa;padding:10px;'>В вашем рое пока пусто</p>" : ""; refs.forEach(r => { container.innerHTML += `<div class='card' style='margin:5px auto;'>🐝 <b>${r.username || 'Пчёлка'}</b></div>`; }); }
         }
 
         window.onload = loadGameAndSync;
