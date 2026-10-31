@@ -126,8 +126,8 @@
         <div class="menu-item" onclick="switchTab('boosts', this)">⚡ Бусты</div>
         <div class="menu-item" onclick="switchTab('friends', this)">👥 Друзья</div>
     </div>
-            <script>
-        // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render!
+    <script>
+    // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render!
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
         
         // ⚠️ ВАЖНО: Укажите юзернейм вашего бота без значка @
@@ -181,20 +181,7 @@
                 });
             }
         }
-
-        // ДВОЙНАЯ ЗАЩИТА: Мгновенное сохранение в локальный localStorage и вечное Облако ТГ!
-        function saveToLocal() { 
-            const stateStr = JSON.stringify(gameState);
-            localStorage.setItem(`bee_game_state_${telegramId}`, stateStr); 
-            
-            if (isTelegram && window.Telegram.WebApp.CloudStorage) {
-                window.Telegram.WebApp.CloudStorage.setItem(`bee_state_${telegramId}`, stateStr, (err) => {
-                    if (err) console.log("Сбой CloudStorage");
-                });
-            }
-        }
-
-                // Запуск при старте: сначала грузим из Облака, затем синхронизируем бэкенд
+        // Запуск при старте: сначала грузим из Облака, затем синхронизируем бэкенд
         function loadGameAndSync() {
             const localData = localStorage.getItem(`bee_game_state_${telegramId}`);
             if (localData) {
@@ -269,7 +256,7 @@
                 updateUI();
             }
         });
-                setInterval(async () => {
+        setInterval(async () => {
             if (accumulatedClicks === 0) return;
             const clicksToSend = accumulatedClicks;
             accumulatedClicks = 0;
@@ -426,7 +413,4 @@
     </script>
 </body>
 </html>
-
-
-            
 
