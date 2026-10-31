@@ -121,7 +121,7 @@
         <div class="menu-item" onclick="switchTab('boosts', this)">⚡ Бусты</div>
         <div class="menu-item" onclick="switchTab('friends', this)">👥 Друзья</div>
     </div>
-    <script>
+        <script>
         // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
         // ⚠️ ВАЖНО: Укажите юзернейм вашего бота без значка @
@@ -140,6 +140,7 @@
                     telegramId = tgUser.id.toString();
                     isTelegram = true;
                 } else if (window.Telegram.WebApp.initData) {
+                    // ИСПРАВЛЕНО: Если мы на ПК, извлекаем ID прямо из сырых параметров инициализации
                     const searchParams = new URLSearchParams(window.Telegram.WebApp.initData);
                     const userParam = searchParams.get('user');
                     if (userParam) {
@@ -162,7 +163,8 @@
 
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
-                function switchTab(tabId, menuItem) {
+
+        function switchTab(tabId, menuItem) {
             try {
                 document.querySelectorAll('.tab-content').forEach(tab => { tab.style.display = 'none'; tab.classList.remove('active'); });
                 document.querySelectorAll('.menu-item').forEach(item => { item.classList.remove('active'); });
@@ -179,50 +181,31 @@
                 window.Telegram.WebApp.CloudStorage.setItem("bee_hive_game_save", stateStr, (err) => {});
             }
         }
-        
-        // ФИНАЛЬНЫЙ ФИКС ЗАГРУЗКИ ДЛЯ ПК И ТЕЛЕФОНОВ
-        function loadGameAndSync() {
-            // 1. Пытаемся мгновенно считать локальную память (для телефонов)
+                function loadGameAndSync() {
             const localData = localStorage.getItem(`bee_game_state_${telegramId}`);
-            if (localData) {
-                gameState = JSON.parse(localData);
-                updateUI();
-                calculateLocalOffline();
-            }
-
-            // Флаг-защита от двойных запросов к бэкенду
+            if (localData) { gameState = JSON.parse(localData); updateUI(); calculateLocalOffline(); }
+            
             let backendSynced = false;
-
-            // СТРАХОВКА ДЛЯ ПК: Если CloudStorage на ПК завис или не поддерживается,
-            // ровно через 500 миллисекунд мы принудительно идём напрямую в твою базу MongoDB!
+            // Страховка для ПК: если облако на ПК не отвечает за 400мс, принудительно забираем данные из MongoDB
             const pcTimeout = setTimeout(() => {
                 if (!backendSynced) {
-                    console.log("🤖 Запуск на ПК / Сбой облака. Запрашиваем MongoDB Atlas напрямую...");
                     syncWithBackend();
                     backendSynced = true;
                 }
-            }, 500);
+            }, 400);
 
-            // 2. Параллельно опрашиваем Облако Телеграма (для телефонов)
             if (isTelegram && window.Telegram.WebApp.CloudStorage) {
                 window.Telegram.WebApp.CloudStorage.getItem("bee_hive_game_save", (err, value) => {
-                    clearTimeout(pcTimeout); // Отменяем таймер, раз облако ответило (на телефоне)
+                    clearTimeout(pcTimeout);
                     if (!backendSynced) {
-                        if (!err && value) { 
-                            gameState = JSON.parse(value); 
-                            updateUI(); 
-                        }
-                        syncWithBackend(); // Синхронизируем стейт с MongoDB Atlas
+                        if (!err && value) { gameState = JSON.parse(value); updateUI(); }
+                        syncWithBackend();
                         backendSynced = true;
                     }
                 });
             } else {
-                // Если мы точно знаем, что облака нет (запуск в браузере или урезанном WebView)
                 clearTimeout(pcTimeout);
-                if (!backendSynced) {
-                    syncWithBackend();
-                    backendSynced = true;
-                }
+                if (!backendSynced) { syncWithBackend(); backendSynced = true; }
             }
         }
 
@@ -295,7 +278,7 @@
                     gameState = data.user; saveToLocal(); 
                     const comboRes = await fetch(`${API_URL}/user/check-combo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
                     const comboData = await comboRes.json();
-                    if (comboData.success) { gameState = comboData.user; saveToLocal(); if (comboData.comboCompleted) alert("🎉 Комбо разгадано! Бонус зачислен!"); }
+                    if (comboData.success) { gameState = comboData.user; saveToLocal(); if (comboData.comboCompleted) alert("🎉 Комбо разгадано!"); }
                 }
             } catch (err) {}
             updateUI();
@@ -317,11 +300,21 @@
             updateUI();
         }
 
+        // ИСПРАВЛЕНО: Чистый и защищенный от опечаток вызов шеринг-окна
         function copyInviteLink() {
-            const link = `https://t.me/richmining_bot/?start=ref${telegramId}`;
-            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link); }
-            const shareUrl = `https://t.me{encodeURIComponent(link)}&text=${encodeURIComponent("Залетай в мой улей! 🍯🐝")}`;
-            if (isTelegram && window.Telegram.WebApp.openLink) { window.Telegram.WebApp.openLink(shareUrl); } else { window.open(shareUrl, '_blank'); }
+            const link = "https://t.me" + /richmining_bot/ + "?start=ref" + telegramId;
+            
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(link);
+                }
+            } catch (e) {}
+                                 
+            if (isTelegram && window.Telegram.WebApp.openLink) {
+                window.Telegram.WebApp.openLink(shareUrl);
+            } else {
+                window.open(shareUrl, '_blank');
+            }
         }
 
         setInterval(() => {
@@ -368,6 +361,13 @@
 </body>
 </html>
 
+
+
+        
+
+
+    
+        
 
 
 
