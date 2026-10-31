@@ -121,7 +121,6 @@
         <div class="menu-item" onclick="switchTab('boosts', this)">⚡ Бусты</div>
         <div class="menu-item" onclick="switchTab('friends', this)">👥 Друзья</div>
     </div>
-
     <script>
         // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
@@ -180,16 +179,51 @@
                 window.Telegram.WebApp.CloudStorage.setItem("bee_hive_game_save", stateStr, (err) => {});
             }
         }
-
+        
+        // ФИНАЛЬНЫЙ ФИКС ЗАГРУЗКИ ДЛЯ ПК И ТЕЛЕФОНОВ
         function loadGameAndSync() {
+            // 1. Пытаемся мгновенно считать локальную память (для телефонов)
             const localData = localStorage.getItem(`bee_game_state_${telegramId}`);
-            if (localData) { gameState = JSON.parse(localData); updateUI(); calculateLocalOffline(); }
+            if (localData) {
+                gameState = JSON.parse(localData);
+                updateUI();
+                calculateLocalOffline();
+            }
+
+            // Флаг-защита от двойных запросов к бэкенду
+            let backendSynced = false;
+
+            // СТРАХОВКА ДЛЯ ПК: Если CloudStorage на ПК завис или не поддерживается,
+            // ровно через 500 миллисекунд мы принудительно идём напрямую в твою базу MongoDB!
+            const pcTimeout = setTimeout(() => {
+                if (!backendSynced) {
+                    console.log("🤖 Запуск на ПК / Сбой облака. Запрашиваем MongoDB Atlas напрямую...");
+                    syncWithBackend();
+                    backendSynced = true;
+                }
+            }, 500);
+
+            // 2. Параллельно опрашиваем Облако Телеграма (для телефонов)
             if (isTelegram && window.Telegram.WebApp.CloudStorage) {
                 window.Telegram.WebApp.CloudStorage.getItem("bee_hive_game_save", (err, value) => {
-                    if (!err && value) { gameState = JSON.parse(value); updateUI(); }
-                    syncWithBackend();
+                    clearTimeout(pcTimeout); // Отменяем таймер, раз облако ответило (на телефоне)
+                    if (!backendSynced) {
+                        if (!err && value) { 
+                            gameState = JSON.parse(value); 
+                            updateUI(); 
+                        }
+                        syncWithBackend(); // Синхронизируем стейт с MongoDB Atlas
+                        backendSynced = true;
+                    }
                 });
-            } else { syncWithBackend(); }
+            } else {
+                // Если мы точно знаем, что облака нет (запуск в браузере или урезанном WebView)
+                clearTimeout(pcTimeout);
+                if (!backendSynced) {
+                    syncWithBackend();
+                    backendSynced = true;
+                }
+            }
         }
 
         function calculateLocalOffline() {
