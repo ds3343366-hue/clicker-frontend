@@ -281,13 +281,28 @@
             } catch (err) { console.log("Буст сохранен локально"); }
         }
 
+                // ИСПРАВЛЕННАЯ ФУНКЦИЯ КОПИРОВАНИЯ И ШЕРИНГА ССЫЛКИ
         function copyInviteLink() {
-            const link = "https://t.me" + /richmining_bot/ + "?start=ref" + telegramId;
-            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link); }
-            const shareUrl = "https://t.meshare/richmining_bot=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей! 🍯🐝");
+            // Современный формат создания строки, защищенный от сбоев кодировки
+            const link = `https://t.me/richmining_bot/?start=ref${telegramId}`;
+            
+            // Копируем ссылку в буфер обмена телефона/ПК
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(link);
+                }
+            } catch (clipErr) { console.log("Прямое копирование недоступно в этом браузере"); }
+
+            // Создаем официальный URL для шеринга внутри Telegram
+            const shareUrl = `https://t.me{encodeURIComponent(link)}&text=${encodeURIComponent("Залетай в мой пчелиному улей! Получи стартовый бонус мёда 🍯🐝")}`;
+            
+            // Вызываем родной метод мессенджера
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
                 window.Telegram.WebApp.openTelegramLink(shareUrl);
-            } else { window.open(shareUrl, '_blank'); }
+            } else {
+                // Запасной вариант для обычного браузера
+                window.open(shareUrl, '_blank');
+            }
         }
 
         setInterval(() => {
