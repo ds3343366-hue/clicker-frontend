@@ -178,20 +178,48 @@
             }
         }
 
+                // ИСПРАВЛЕНО: Пуленепробиваемый алгоритм загрузки для ПК и телефонов одновременно
         function loadGameAndSync() {
+            // 1. Сначала мгновенно выводим локальный сейв, если он есть
             const localData = localStorage.getItem(`bee_game_state_${telegramId}`);
             if (localData) {
                 gameState = JSON.parse(localData);
                 updateUI();
                 calculateLocalOffline();
             }
-            if (isTelegram && window.Telegram.WebApp.CloudStorage) {
-                window.Telegram.WebApp.CloudStorage.getItem(`bee_state_${telegramId}`, (err, value) => {
-                    if (!err && value) { gameState = JSON.parse(value); updateUI(); }
+
+            // Флаг, чтобы не делать двойной запрос к бэкенду
+            let backendSynced = false;
+
+            // Тайм-аут: если ПК-версия Telegram зависла и не отвечает по CloudStorage за 800мс,
+            // мы принудительно идём напрямую в MongoDB Atlas на Render!
+            const cloudTimeout = setTimeout(() => {
+                if (!backendSynced) {
+                    console.log("🤖 CloudStorage на ПК не ответил. Запрашиваем MongoDB Atlas напрямую...");
                     syncWithBackend();
+                    backendSynced = true;
+                }
+            }, 800);
+
+            // 2. Параллельно запрашиваем вечное Облако (для телефонов)
+            if (isTelegram && window.Telegram.WebApp.CloudStorage) {
+                window.Telegram.WebApp.CloudStorage.getItem("bee_hive_game_save", (err, value) => {
+                    clearTimeout(cloudTimeout); // Отменяем тайм-аут, если облако ответило
+                    if (!backendSynced) {
+                        if (!err && value) { 
+                            gameState = JSON.parse(value); 
+                            updateUI(); 
+                        }
+                        syncWithBackend(); // Синхронизируем актуальные данные с MongoDB
+                        backendSynced = true;
+                    }
                 });
             } else {
-                syncWithBackend();
+                clearTimeout(cloudTimeout);
+                if (!backendSynced) {
+                    syncWithBackend();
+                    backendSynced = true;
+                }
             }
         }
 
@@ -214,7 +242,7 @@
                 }
             } catch (e) { console.log("Ошибка расчета офлайна"); }
         }
-
+        
         async function syncWithBackend() {
             try {
                 const response = await fetch(`${API_URL}/user/sync?v=${Date.now()}`, {
