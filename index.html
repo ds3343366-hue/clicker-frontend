@@ -51,12 +51,9 @@
         </div>
         <div style="font-size: 18px; font-weight: bold; color: #ffcc00; text-shadow: 0 0 5px rgba(255,204,0,0.3);">⚡ <span id="energy-display">1000 / 1000</span></div>
     </div>
-
     <!-- ВКЛАДКА 2: СОТЫ С БЛОКОМ ЕЖЕДНЕВНОГО КОМБО -->
     <div id="tab-cards" class="tab-content">
         <h3 style="color: #ffcc00;">Развитие Бизнес-Сот 📊</h3>
-
-        <!-- БЛОК ЕЖЕДНЕВНОГО КОМБО -->
         <div class="card" style="border-color: #ffaa00; background: rgba(255, 204, 0, 0.05); text-align: center;">
             <strong style="color: #ffcc00; font-size: 16px;">🐝 Ежедневное Пчелиное Комбо</strong>
             <p style="font-size: 12px; color: #aaa; margin: 5px 0;">Найди секретные соты сегодня и получи бонус +250k 🍯</p>
@@ -66,7 +63,6 @@
             </div>
             <div id="combo-status-text" style="font-size: 13px; color: #ffcc00; margin-top: 8px; font-weight: bold;">Собрано: 0 / 2</div>
         </div>
-
         <div class="card">
             <button onclick="buyCard('ceo_card')">💰 <span id="price-ceo_card">100</span></button>
             <strong>Личинка в сотах</strong><br>
@@ -86,7 +82,6 @@
             <div class="clear"></div>
         </div>
     </div>
-
     <!-- ВКЛАДКА 3: БУСТЫ -->
     <div id="tab-boosts" class="tab-content">
         <h3 style="color: #ffcc00;">Инженерия Улья ⚡</h3>
@@ -114,42 +109,38 @@
     <div id="tab-friends" class="tab-content">
         <h3 style="color: #ffcc00;">Пригласить в Рой 👥</h3>
         <div class="card" style="text-align: center; cursor: pointer; border-style: dashed; background: rgba(255,204,0,0.05);" onclick="copyInviteLink()">
-            🐝 Пригласить пчелу | Скопировать ссылку 📋
+            🐝 Нажмите сюда, чтобы пригласить пчелу и скопировать ссылку 📋
         </div>
         <h4>Ваш рабочий рой (<span id="referrals-count">0</span>):</h4>
         <div id="friends-list" style="max-height: 220px; overflow-y: auto;"></div>
     </div>
 
+    <!-- НАВИГАЦИОННЫЕ ТАБЫ -->
     <div class="menu">
         <div class="menu-item active" onclick="switchTab('click', this)">🐝 Клик</div>
         <div class="menu-item" onclick="switchTab('cards', this)">📊 Соты</div>
         <div class="menu-item" onclick="switchTab('boosts', this)">⚡ Бусты</div>
         <div class="menu-item" onclick="switchTab('friends', this)">👥 Друзья</div>
     </div>
+
     <script>
-    // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render!
+        // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
-        
         // ⚠️ ВАЖНО: Укажите юзернейм вашего бота без значка @
         const BOT_USERNAME = "richmining_bot"; 
 
         let telegramId = "123456789"; 
         let isTelegram = false;
 
-        // Полноценная инициализация Telegram SDK контекста
         try {
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.ready();
                 window.Telegram.WebApp.expand();
                 const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
-                if (tgUser) {
-                    telegramId = tgUser.id.toString();
-                    isTelegram = true;
-                }
+                if (tgUser) { telegramId = tgUser.id.toString(); isTelegram = true; }
             }
         } catch(e) { console.log("Запуск вне мессенджера"); }
 
-        // Изначальное состояние игры
         let gameState = {
             balance: 0, totalEarned: 0, level: 1, profitPerHour: 0,
             energy: 1000, maxEnergy: 1000, multitapLevel: 1,
@@ -159,29 +150,34 @@
 
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
-
         function switchTab(tabId, menuItem) {
             try {
-                document.querySelectorAll('.tab-content').forEach(tab => { tab.style.display = 'none'; tab.classList.remove('active'); });
-                document.querySelectorAll('.menu-item').forEach(item => { item.classList.remove('active'); });
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.style.display = 'none';
+                    tab.classList.remove('active');
+                });
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.remove('active');
+                });
                 const targetTab = document.getElementById(`tab-${tabId}`);
-                if (targetTab) { targetTab.style.display = 'block'; targetTab.classList.add('active'); }
+                if (targetTab) {
+                    targetTab.style.display = 'block';
+                    targetTab.classList.add('active');
+                }
                 if (menuItem) menuItem.classList.add('active');
             } catch (err) { console.error("Ошибка вкладок:", err); }
         }
 
-        // ДВОЙНАЯ ЗАЩИТА: Мгновенное сохранение в локальный localStorage и вечное Облако ТГ!
         function saveToLocal() { 
             const stateStr = JSON.stringify(gameState);
             localStorage.setItem(`bee_game_state_${telegramId}`, stateStr); 
-            
             if (isTelegram && window.Telegram.WebApp.CloudStorage) {
                 window.Telegram.WebApp.CloudStorage.setItem(`bee_state_${telegramId}`, stateStr, (err) => {
                     if (err) console.log("Сбой CloudStorage");
                 });
             }
         }
-        // Запуск при старте: сначала грузим из Облака, затем синхронизируем бэкенд
+
         function loadGameAndSync() {
             const localData = localStorage.getItem(`bee_game_state_${telegramId}`);
             if (localData) {
@@ -189,37 +185,30 @@
                 updateUI();
                 calculateLocalOffline();
             }
-
             if (isTelegram && window.Telegram.WebApp.CloudStorage) {
                 window.Telegram.WebApp.CloudStorage.getItem(`bee_state_${telegramId}`, (err, value) => {
-                    if (!err && value) {
-                        gameState = JSON.parse(value);
-                        updateUI();
-                    }
-                    syncWithBackend(); // Мягко сверяем данные с бэкендом MongoDB Atlas
+                    if (!err && value) { gameState = JSON.parse(value); updateUI(); }
+                    syncWithBackend();
                 });
             } else {
                 syncWithBackend();
             }
         }
 
-        // Локальное вычисление намайненного мёда по часам телефона
         function calculateLocalOffline() {
             try {
                 const lastLocalSync = localStorage.getItem(`bee_last_sync_${telegramId}`);
                 if (lastLocalSync && gameState.profitPerHour > 0) {
                     const secondsOffline = Math.floor((Date.now() - parseInt(lastLocalSync)) / 1000);
-                    const activeSeconds = Math.min(secondsOffline, 3 * 60 * 60); // Лимит офлайна: 3 часа
-                    
+                    const activeSeconds = Math.min(secondsOffline, 3 * 60 * 60); 
                     if (activeSeconds > 3) {
                         const profitPerSecond = gameState.profitPerHour / 3600;
                         const localOfflineEarned = Math.floor(activeSeconds * profitPerSecond);
                         if (localOfflineEarned > 0) {
                             gameState.balance += localOfflineEarned;
                             gameState.totalEarned += localOfflineEarned;
-                            alert(`Пока Telegram был закрыт, пчёлы намайнили: +${localOfflineEarned} 🍯`);
-                            saveToLocal();
-                            updateUI();
+                            alert(`Пока улей был закрыт, пчёлы намайнили: +${localOfflineEarned} 🍯`);
+                            saveToLocal(); updateUI();
                         }
                     }
                 }
@@ -228,38 +217,28 @@
 
         async function syncWithBackend() {
             try {
-                // Сброс кэша с помощью уникального таймстампа (?v=...)
                 const response = await fetch(`${API_URL}/user/sync?v=${Date.now()}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ telegramId })
                 });
                 const data = await response.json();
-                if (data.success) {
-                    gameState = data.user;
-                    saveToLocal();
-                }
-            } catch (err) { console.log("Сервер Render спит, игра работает на сейвах Telegram"); }
+                if (data.success) { gameState = data.user; saveToLocal(); }
+            } catch (err) { console.log("Работа на локальных сейвах."); }
             updateUI();
         }
 
-        // Ручной клик по пчеле
         let accumulatedClicks = 0;
         document.getElementById("bee-click").addEventListener("click", () => {
             const clickPower = gameState.multitapLevel;
             if (gameState.energy >= clickPower) {
-                gameState.energy -= clickPower;
-                gameState.balance += clickPower;
-                gameState.totalEarned += clickPower;
-                accumulatedClicks += 1;
-                saveToLocal();
-                updateUI();
+                gameState.energy -= clickPower; gameState.balance += clickPower; gameState.totalEarned += clickPower;
+                accumulatedClicks += 1; saveToLocal(); updateUI();
             }
         });
         setInterval(async () => {
             if (accumulatedClicks === 0) return;
-            const clicksToSend = accumulatedClicks;
-            accumulatedClicks = 0;
+            const clicksToSend = accumulatedClicks; accumulatedClicks = 0;
             try {
                 await fetch(`${API_URL}/user/click`, {
                     method: 'POST',
@@ -267,7 +246,7 @@
                     body: JSON.stringify({ telegramId, clicksCount: clicksToSend })
                 });
                 saveToLocal();
-            } catch (err) { console.log("Клики сохранены в памяти телефона до восстановления сети"); }
+            } catch (err) {}
         }, 3000);
 
         async function buyCard(cardId) {
@@ -290,7 +269,6 @@
                 const data = await response.json();
                 if (data.success) { 
                     gameState = data.user; saveToLocal(); 
-                    
                     const comboRes = await fetch(`${API_URL}/user/check-combo`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -299,10 +277,10 @@
                     const comboData = await comboRes.json();
                     if (comboData.success) {
                         gameState = comboData.user; saveToLocal();
-                        if (comboData.comboCompleted) alert(`🎉 Комбо разгадано! +${comboData.reward} 🍯`);
+                        if (comboData.comboCompleted) alert("🎉 Комбо разгадано! Бонус зачислен!");
                     }
                 }
-            } catch (err) { console.log("Апгрейд зафиксирован локально"); }
+            } catch (err) {}
             updateUI();
         }
 
@@ -332,7 +310,7 @@
         function copyInviteLink() {
             const link = `https://t.me/richmining_bot/?start=ref${telegramId}`;
             if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link); }
-            const shareUrl = `https://t.me{encodeURIComponent(link)}&text=${encodeURIComponent("Залетай в мой улей! 🍯🐝 Получи стартовый бонус мёда!")}`;
+            const shareUrl = `https://t.me{encodeURIComponent(link)}&text=${encodeURIComponent("Залетай в мой улей! 🍯🐝")}`;
             if (isTelegram && window.Telegram.WebApp.openLink) {
                 window.Telegram.WebApp.openLink(shareUrl);
             } else { window.open(shareUrl, '_blank'); }
@@ -347,8 +325,7 @@
                 gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + (gameState.maxEnergy / 10800));
             }
             localStorage.setItem(`bee_last_sync_${telegramId}`, Date.now().toString());
-            saveToLocal(); 
-            updateUI();
+            saveToLocal(); updateUI();
         }, 1000);
 
         function updateUI() {
