@@ -122,8 +122,7 @@
         <div class="menu-item" onclick="switchTab('boosts', this)">⚡ Бусты</div>
         <div class="menu-item" onclick="switchTab('friends', this)">👥 Друзья</div>
     </div>
-
-    <script>
+        <script>
         // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
         // ⚠️ ВАЖНО: Укажите юзернейм вашего бота без значка @
@@ -150,34 +149,29 @@
 
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
+
         function switchTab(tabId, menuItem) {
             try {
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.style.display = 'none';
-                    tab.classList.remove('active');
-                });
-                document.querySelectorAll('.menu-item').forEach(item => {
-                    item.classList.remove('active');
-                });
+                document.querySelectorAll('.tab-content').forEach(tab => { tab.style.display = 'none'; tab.classList.remove('active'); });
+                document.querySelectorAll('.menu-item').forEach(item => { item.classList.remove('active'); });
                 const targetTab = document.getElementById(`tab-${tabId}`);
-                if (targetTab) {
-                    targetTab.style.display = 'block';
-                    targetTab.classList.add('active');
-                }
+                if (targetTab) { targetTab.style.display = 'block'; targetTab.classList.add('active'); }
                 if (menuItem) menuItem.classList.add('active');
             } catch (err) { console.error("Ошибка вкладок:", err); }
         }
 
+        // ИСПРАВЛЕНО: Ключ стал фиксированным и строго латинским для 100% одобрения Telegram Cloud
         function saveToLocal() { 
             const stateStr = JSON.stringify(gameState);
             localStorage.setItem(`bee_game_state_${telegramId}`, stateStr); 
+            
             if (isTelegram && window.Telegram.WebApp.CloudStorage) {
-                window.Telegram.WebApp.CloudStorage.setItem(`bee_state_${telegramId}`, stateStr, (err) => {
+                window.Telegram.WebApp.CloudStorage.setItem("bee_hive_game_save", stateStr, (err) => {
                     if (err) console.log("Сбой CloudStorage");
                 });
             }
         }
-
+                // ИСПРАВЛЕНО: Чтение данных теперь происходит из надежного статического ключа
         function loadGameAndSync() {
             const localData = localStorage.getItem(`bee_game_state_${telegramId}`);
             if (localData) {
@@ -186,8 +180,11 @@
                 calculateLocalOffline();
             }
             if (isTelegram && window.Telegram.WebApp.CloudStorage) {
-                window.Telegram.WebApp.CloudStorage.getItem(`bee_state_${telegramId}`, (err, value) => {
-                    if (!err && value) { gameState = JSON.parse(value); updateUI(); }
+                window.Telegram.WebApp.CloudStorage.getItem("bee_hive_game_save", (err, value) => {
+                    if (!err && value) { 
+                        gameState = JSON.parse(value); 
+                        updateUI(); 
+                    }
                     syncWithBackend();
                 });
             } else {
@@ -236,7 +233,7 @@
                 accumulatedClicks += 1; saveToLocal(); updateUI();
             }
         });
-        setInterval(async () => {
+                setInterval(async () => {
             if (accumulatedClicks === 0) return;
             const clicksToSend = accumulatedClicks; accumulatedClicks = 0;
             try {
@@ -391,3 +388,6 @@
 </body>
 </html>
 
+
+
+    
