@@ -172,7 +172,30 @@
 
         function saveToLocal() { localStorage.setItem(`bee_game_state_${telegramId}`, JSON.stringify(gameState)); }
 
-        async function syncWithBackend() {
+                async function syncWithBackend() {
+            // ИСПРАВЛЕНО: Перед запросом к серверу сами считаем, сколько намайнилось по часам телефона
+            try {
+                const lastLocalSync = localStorage.getItem(`bee_last_sync_${telegramId}`);
+                if (lastLocalSync && gameState.profitPerHour > 0) {
+                    const secondsOffline = Math.floor((Date.now() - parseInt(lastLocalSync)) / 1000);
+                    // Ограничение майнинга в офлайне (например, максимум 3 часа = 10800 сек)
+                    const activeSeconds = Math.min(secondsOffline, 3 * 60 * 60); 
+                    
+                    if (activeSeconds > 2) {
+                        const profitPerSecond = gameState.profitPerHour / 3600;
+                        const localOfflineEarned = Math.floor(activeSeconds * profitPerSecond);
+                        
+                        if (localOfflineEarned > 0) {
+                            gameState.balance += localOfflineEarned;
+                            gameState.totalEarned += localOfflineEarned;
+                            alert(`Пока улей был закрыт, пчёлы намайнили: +${localOfflineEarned} 🍯 (Локальное сохранение)`);
+                            updateUI();
+                        }
+                    }
+                }
+            } catch (e) { console.log("Ошибка локального расчета офлайна"); }
+
+            // Теперь спокойно делаем фоновый запрос к бэкенду MongoDB
             try {
                 const response = await fetch(`${API_URL}/user/sync`, {
                     method: 'POST',
@@ -181,13 +204,13 @@
                 });
                 const data = await response.json();
                 if (data.success) {
+                    // Если сервер проснулся и ответил актуальными данными, плавно обновляем стейт
                     gameState = data.user;
                     saveToLocal();
-                    if (data.earnedOffline > 0) {
-                        alert(`Пчёлы трудились! Добыто офлайн: +${data.earnedOffline} 🍯`);
-                    }
                 }
-            } catch (err) { console.log("Работа на локальном сохранении."); }
+            } catch (err) { 
+                console.log("⚠️ Сервер Render просыпается. Игра работает в автономном режиме сохранения.");
+            }
             updateUI();
         }
 
@@ -315,7 +338,9 @@
                 const rps = gameState.maxEnergy / 10800;
                 gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + rps);
             }
-            saveToLocal(); updateUI();
+            localStorage.setItem(`bee_last_sync_${telegramId}`, Date.now().toString());
+            saveToLocal(); 
+            updateUI();
         }, 1000);
 
         function updateUI() {
