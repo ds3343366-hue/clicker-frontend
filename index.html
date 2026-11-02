@@ -9,7 +9,7 @@
     <!-- Подключаем стабильную версию TON Connect UI -->
     <script src="https://jsdelivr.net"></script>
     <style>
-        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: radial-gradient(circle, #2c1a04 0%, #140b01 100%); color: #fff; text-align: center; padding: 20px; margin: 0; min-height: 100vh; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: radial-gradient(circle, #2c1a04 0%, #140b01 100%); color: #fff; text-align: center; padding: 20px; margin: 0; min-height: 100vh; user-select: none; }
         .card { background: rgba(58, 36, 8, 0.6); border: 1px solid #ffcc00; box-shadow: 0 4px 15px rgba(255, 204, 0, 0.1); padding: 15px; margin: 12px auto; max-width: 400px; border-radius: 12px; text-align: left; backdrop-filter: blur(5px); }
         .menu { display: flex; justify-content: space-around; max-width: 400px; margin: 20px auto; padding: 12px; background: rgba(26, 15, 3, 0.9); border: 1px solid rgba(255, 204, 0, 0.2); border-radius: 16px; position: fixed; bottom: 15px; left: 10px; right: 10px; z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
         .menu-item { cursor: pointer; padding: 10px 10px; border-radius: 10px; font-weight: bold; transition: all 0.2s ease; color: #ccaa66; font-size: 13px; }
@@ -23,12 +23,19 @@
         #bee-click { font-size: 95px; cursor: pointer; user-select: none; z-index: 2; transition: transform 0.05s; display: inline-block; filter: drop-shadow(0 0 10px rgba(255,204,0,0.6)); }
         #bee-click:active { transform: scale(0.9); }
         .progress-container { width: 100%; max-width: 360px; height: 12px; background: #222; border-radius: 6px; margin: 15px auto; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
-        .progress-bar { width: 1%; height: 100%; transition: width 0.3s ease, background 0.5s ease; box-shadow: 0 0 8px rgba(255,255,255,0.5); background: linear-gradient(90deg, #ff3333 0%, #ffcc00 50%, #00ff66 100%) no-repeat; background-size: 360px 100%; }
+        .progress-bar { width: 1%; height: 100%; transition: width 0.1s ease, background 0.5s ease; box-shadow: 0 0 8px rgba(255,255,255,0.5); background: linear-gradient(90deg, #ff3333 0%, #ffcc00 50%, #00ff66 100%) no-repeat; background-size: 360px 100%; }
         .clear { clear: both; }
         .main-stats { background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,204,0,0.1); }
         .web3-btn { background: #0098ea; color: #fff; border: none; padding: 14px 24px; font-weight: bold; border-radius: 12px; cursor: pointer; font-size: 16px; width: 100%; box-shadow: 0 4px 15px rgba(0, 152, 234, 0.3); transition: all 0.2s ease; margin: 15px 0; float: none; }
         .web3-btn:active { transform: scale(0.98); }
-        tc-root { z-index: 99999 !important; position: relative; }
+        /* Красивое кастомное модальное Web3-меню выбора кошельков */
+        .wallet-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .wallet-modal-content { background: #1a0f02; border: 2px solid #ffcc00; border-radius: 20px; width: 90%; max-width: 360px; padding: 25px; box-shadow: 0 0 30px rgba(255,204,0,0.2); animation: fadeIn 0.2s ease; text-align: center; }
+        .wallet-option { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,204,0,0.2); padding: 12px 15px; border-radius: 12px; margin: 12px 0; cursor: pointer; transition: all 0.2s ease; }
+        .wallet-option:hover { background: rgba(255,204,0,0.1); border-color: #ffcc00; transform: translateY(-2px); }
+        .wallet-logo { width: 32px; height: 32px; margin-right: 15px; border-radius: 6px; }
+        .wallet-name { font-size: 16px; font-weight: bold; color: #fff; }
+        .close-modal-btn { background: #333; color: #aaa; margin-top: 15px; float: none; padding: 8px 20px; font-size: 14px; width: 100%; border-radius: 10px; }
         @keyframes pulseGlow { from { transform: scale(0.98); box-shadow: 0 0 15px #ffcc00; } to { transform: scale(1.02); box-shadow: 0 0 30px #ffaa00; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -41,7 +48,7 @@
             <div>Пассив улья: <span style="color:#ffcc00;"><span id="passive-display">0</span>/ч</span></div>
         </div>
         <h1 style="color: #ffcc00; font-size: 38px; margin: 12px 0; text-shadow: 0 0 15px rgba(255,204,0,0.4);">🍯 <span id="balance-display">0</span></h1>
-        <div style="font-size: 14px; margin-top: 5px;">Уровень Соты: <span id="level-display">1</span> / 30</div>
+        <div style="font-size: 14px; margin-top: 5px;">Ранг: <span id="rank-display" style="color: #ffcc00; font-weight: bold;">Рабочая Пчела</span> (<span id="level-display">1</span>/30)</div>
         <div class="progress-container">
             <div id="level-progress" class="progress-bar"></div>
         </div>
@@ -97,9 +104,9 @@
             <div class="clear"></div>
         </div>
         <div class="card">
-            <button onclick="upgradeStat('energy', 300)">💰 <span id="price-energy">300</span></button>
-            <strong>🔋 Лимит бака</strong><br>
-            <span style="color: #aaa; font-size: 13px;">Ур. <span id="lvl-energy">1</span> (Энергия +500)</span>
+            <button onclick="buyEnergyBoost(300, 150)">💰 <span id="price-energy">150</span></button>
+            <strong>🔋 Пополнить бак (+300)</strong><br>
+            <span style="color: #aaa; font-size: 13px;">Мгновенный реген энергии по нарастающей в лимит 1000</span>
             <div class="clear"></div>
         </div>
         <div class="card">
@@ -114,13 +121,13 @@
     <div id="tab-friends" class="tab-content">
         <h3 style="color: #ffcc00;">Пригласить в Рой 👥</h3>
         <div class="card" style="text-align: center; cursor: pointer; border-style: dashed; background: rgba(255,204,0,0.05);" onclick="copyInviteLink()">
-            🐝 Нажмите сюда, чтобы пригласить пчелу и скопировать ссылку 📋
+            <b>🐝 Нажмите сюда, чтобы пригласить пчелу и скопировать ссылку 📋</b>
         </div>
         <h4>Ваш рабочий рой (<span id="referrals-count">0</span>):</h4>
         <div id="friends-list" style="max-height: 220px; overflow-y: auto;"></div>
     </div>
 
-    <!-- ВКЛАДКА 5: AIRDROP С КЛИКАБЕЛЬНОЙ НЕЗАВИСИМОЙ КНОПКОЙ -->
+    <!-- ВКЛАДКА 5: AIRDROP -->
     <div id="tab-airdrop" class="tab-content">
         <h3 style="color: #ffcc00;">Программа AirDrop 💎</h3>
         <div class="card" style="text-align: center; border-color: #ffcc00;">
@@ -128,6 +135,27 @@
             <p style="font-size: 13px; color: #aaa; margin: 10px 0;">Подключи свой TON кошелек для фиксации участия в будущем AirDrop.</p>
             <button id="custom-wallet-btn" class="web3-btn" onclick="handleWalletAction()">Connect Wallet 💎</button>
             <div id="wallet-status-msg" style="font-size: 13px; font-weight: bold; color: #ffcc00; margin-top: 12px;">Кошелек не подключен ❌</div>
+        </div>
+    </div>
+
+    <!-- Кастомное встроенное меню выбора кошельков -->
+    <div id="custom-crypto-modal" class="wallet-modal">
+        <div class="wallet-modal-content">
+            <h3 style="color: #ffcc00; margin-top: 0;">Connect Wallet 💎</h3>
+            <p style="font-size: 13px; color: #aaa;">Выберите кошелек для подключения:</p>
+            <div class="wallet-option" onclick="connectSpecificWallet('tonkeeper')">
+                <img class="wallet-logo" src="https://githubusercontent.com" alt="Tonkeeper">
+                <div class="wallet-name">Tonkeeper</div>
+            </div>
+            <div class="wallet-option" onclick="connectSpecificWallet('mytonwallet')">
+                <img class="wallet-logo" src="https://githubusercontent.com" alt="MyTonWallet">
+                <div class="wallet-name">MyTonWallet</div>
+            </div>
+            <div class="wallet-option" onclick="connectSpecificWallet('telegram-wallet')">
+                <img class="wallet-logo" src="https://githubusercontent.com" alt="Wallet">
+                <div class="wallet-name">Wallet in Telegram</div>
+            </div>
+            <button class="close-modal-btn" onclick="closeCryptoModal()">Отмена</button>
         </div>
     </div>
 
@@ -179,23 +207,28 @@
 
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
-                // ИСПРАВЛЕННЫЙ И СЕРТИФИЦИРОВАННЫЙ БЛОК ИНИЦИАЛИЗАЦИИ TON CONNECT
+
+        // Красивые ранги пчелок (1-30 уровни разделены по 6 рангам)
+        const RANK_NAMES = [
+            "Личинка 🥚", "Рабочая Пчела 🐝", "Сборщик Нектара 🌸", 
+            "Гвардеец Улья 🛡️", "Кибер-Пчела ⚡", "Королева Роя 👑"
+        ];
+        const BEE_SKINS = [
+            "🥚", "🐣", "🐝", "🐝", "🐝", "🌸", "🌸", "🌸", "🌸", "🌸",
+            "🍯", "🍯", "🍯", "🍯", "🍯", "🛡️", "🛡️", "🛡️", "🛡️", "🛡️",
+            "⚡", "⚡", "⚡", "⚡", "⚡", "👑", "👑", "👑", "👑", "🚀"
+        ];
         let tonConnectUI = null;
         try {
-            // ИСПРАВЛЕНО: Используем прямую HTTPS-ссылку на манифест с правильными JSON-заголовками.
-            // Замените этот URL на ваш реальный путь к файлу tonconnect-manifest.json через ://githack.com
-            // или оставьте этот валидный JSON-манифест, он полностью подходит для теста:
-            const safeManifestUrl = 'https://api.myjson.online/v1/records/19e9ce03-e668-41ac-90fe-d25f6de3aead';
+            const manifestObj = { url: window.location.origin + window.location.pathname, name: "Bee Clicker" };
+            const base64Manifest = btoa(unescape(encodeURIComponent(JSON.stringify(manifestObj))));
+            const embeddedManifestUrl = "data:application/json;base64," + base64Manifest;
 
-            tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                manifestUrl: safeManifestUrl
-            });
+            tonConnectUI = new TON_CONNECT_UI.TonConnectUI({ manifestUrl: embeddedManifestUrl });
 
-            // Отслеживание состояния кошелька
             tonConnectUI.onStatusChange(async (wallet) => {
                 const btn = document.getElementById("custom-wallet-btn");
                 const msg = document.getElementById("wallet-status-msg");
-                
                 if (wallet && wallet.account && wallet.account.address) {
                     gameState.walletAddress = wallet.account.address;
                     if (msg) { msg.innerText = "Подключено! ✅"; msg.style.color = "#00ff66"; }
@@ -209,15 +242,18 @@
                 }
                 saveToLocal();
             });
-        } catch (tonErr) { console.log("Web3 Core Error:", tonErr); }
-        // Действие при клике на нашу кастомную кнопку
+        } catch (tonErr) { console.log("Web3 Error:", tonErr); }
+
         function handleWalletAction() {
             if (!tonConnectUI) return;
-            if (tonConnectUI.connected) {
-                tonConnectUI.disconnect();
-            } else {
-                tonConnectUI.openModal();
-            }
+            if (tonConnectUI.connected) { tonConnectUI.disconnect(); } 
+            else { document.getElementById("custom-crypto-modal").style.display = "flex"; }
+        }
+        function closeCryptoModal() { document.getElementById("custom-crypto-modal").style.display = "none"; }
+        async function connectSpecificWallet(walletKey) {
+            closeCryptoModal();
+            if (!tonConnectUI) return;
+            try { await tonConnectUI.openModal(); } catch (err) {}
         }
 
         async function sendWalletToBackend(address) {
@@ -228,6 +264,19 @@
                     body: JSON.stringify({ telegramId, walletAddress: address })
                 });
             } catch (err) { console.log("Ошибка отправки кошелька"); }
+        }
+        function buyEnergyBoost(amount, cost) {
+            if (gameState.balance < cost) { alert("Недостаточно мёда для пополнения бака! 🍯"); return; }
+            if (gameState.energy >= 1000) { alert("Ваш бак энергии уже полностью заполнен! ⚡"); return; }
+            gameState.balance -= cost;
+            gameState.energy = Math.min(1000, gameState.energy + amount);
+            saveToLocal(); updateUI();
+            alert(`Бак пополнен: +${amount} ⚡`);
+            fetch(`${API_URL}/api/user/upgrade-stat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telegramId, type: 'energy_refill', cost: cost })
+            }).catch(() => {});
         }
 
         function switchTab(tabId, menuItem) {
@@ -252,7 +301,7 @@
             const localData = localStorage.getItem(`bee_game_state_${telegramId}`);
             if (localData) { gameState = JSON.parse(localData); updateUI(); calculateLocalOffline(); }
             if (isTelegram && window.Telegram.WebApp.CloudStorage) {
-                window.Telegram.WebApp.CloudStorage.getItem("bee_hive_game_save", (err, value) => {
+                window.Telegram.WebApp.CloudStorage.setItem("bee_hive_game_save", stateStr, (err, value) => {
                     if (!err && value) { gameState = JSON.parse(value); updateUI(); }
                     syncWithBackend();
                 });
@@ -268,109 +317,86 @@
                     if (activeSeconds > 3) {
                         const profitPerSecond = gameState.profitPerHour / 3600;
                         const localOfflineEarned = Math.floor(activeSeconds * profitPerSecond);
-                        if (localOfflineEarned > 0) {
-                            gameState.balance += localOfflineEarned; gameState.totalEarned += localOfflineEarned;
-                            alert(`Пока улей был закрыт, пчёлы намайнили: +${localOfflineEarned} 🍯`);
-                            saveToLocal(); updateUI();
-                        }
+                        if (localOfflineEarned > 0) { gameState.balance += localOfflineEarned; gameState.totalEarned += localOfflineEarned; alert(`Пока улей был закрыт, пчёлы намайнили: +${localOfflineEarned} 🍯`); saveToLocal(); updateUI(); }
                     }
                 }
             } catch (e) { console.log("Ошибка расчета офлайна"); }
         }
         async function syncWithBackend() {
             try {
-                const response = await fetch(`${API_URL}/api/user/sync?v=${Date.now()}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegramId })
-                });
-                const data = await response.json();
-                if (data.success) { gameState = data.user; saveToLocal(); }
-            } catch (err) { console.log("Работа на локальных сейвах."); }
+                const response = await fetch(`${API_URL}/api/user/sync?v=${Date.now()}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId }) });
+                const data = await response.json(); if (data.success) { gameState = data.user; saveToLocal(); }
+            } catch (err) {}
             updateUI();
         }
 
         let accumulatedClicks = 0;
         document.getElementById("bee-click").addEventListener("click", () => {
             const clickPower = gameState.multitapLevel;
-            if (gameState.energy >= clickPower) {
-                gameState.energy -= clickPower; gameState.balance += clickPower; gameState.totalEarned += clickPower;
-                accumulatedClicks += 1; saveToLocal(); updateUI();
-            }
+            if (gameState.energy >= clickPower) { gameState.energy -= clickPower; gameState.balance += clickPower; gameState.totalEarned += clickPower; accumulatedClicks += 1; saveToLocal(); updateUI(); }
         });
 
         setInterval(async () => {
             if (accumulatedClicks === 0) return;
             const clicksToSend = accumulatedClicks; accumulatedClicks = 0;
-            try {
-                await fetch(`${API_URL}/api/user/click`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegramId, clicksCount: clicksToSend })
-                });
-                saveToLocal();
-            } catch (err) {}
+            try { await fetch(`${API_URL}/api/user/click`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, clicksCount: clicksToSend }) }); saveToLocal(); } catch (err) {}
         }, 3000);
 
         async function buyCard(cardId) {
-            const card = gameState.purchasedCards.find(c => c.cardId === cardId);
-            const currentLevel = card ? card.level : 0;
+            const card = gameState.purchasedCards.find(c => c.cardId === cardId); const currentLevel = card ? card.level : 0;
             const price = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLevel));
             if (gameState.balance < price) { alert("Недостаточно мёда! 🍯"); return; }
-            gameState.balance -= price;
-            gameState.profitPerHour += (cardId === 'ceo_card' ? 10 : cardId === 'marketing_card' ? 45 : 200);
+            gameState.balance -= price; gameState.profitPerHour += (cardId === 'ceo_card' ? 10 : cardId === 'marketing_card' ? 45 : 200);
             if (card) { card.level += 1; } else { gameState.purchasedCards.push({ cardId: cardId, level: 1 }); }
             saveToLocal(); updateUI();
             try {
                 const response = await fetch(`${API_URL}/api/user/buy-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
-                const data = await response.json();
-                if (data.success) { 
-                    gameState = data.user; saveToLocal(); 
-                    const comboRes = await fetch(`${API_URL}/api/user/check-combo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
-                    const comboData = await comboRes.json();
-                    if (comboData.success) { gameState = comboData.user; saveToLocal(); if (comboData.comboCompleted) alert("🎉 Комбо разгадано!"); }
-                }
+                const data = await response.json(); if (data.success) { gameState = data.user; saveToLocal(); const comboRes = await fetch(`${API_URL}/api/user/check-combo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) }); const comboData = await comboRes.json(); if (comboData.success) { gameState = comboData.user; saveToLocal(); if (comboData.comboCompleted) alert("🎉 Комбо разгадано!"); } }
             } catch (err) {}
             updateUI();
         }
 
         async function upgradeStat(type, currentCost) {
-            let currentLvl = type === 'multitap' ? gameState.multitapLevel : type === 'energy' ? gameState.energyLimitLevel : gameState.offlineMiningLevel;
+            let currentLvl = type === 'multitap' ? gameState.multitapLevel : gameState.offlineMiningLevel;
             const price = Math.floor(currentCost * Math.pow(1.5, currentLvl - 1));
             if (gameState.balance < price) { alert("Недостаточно мёда! 🍯"); return; }
-            gameState.balance -= price;
-            if (type === 'multitap') gameState.multitapLevel += 1;
-            if (type === 'energy') { gameState.energyLimitLevel += 1; gameState.maxEnergy += 500; gameState.energy = gameState.maxEnergy; }
-            if (type === 'offline') gameState.offlineMiningLevel += 1;
+            gameState.balance -= price; if (type === 'multitap') gameState.multitapLevel += 1; if (type === 'offline') gameState.offlineMiningLevel += 1;
             saveToLocal(); updateUI();
-            try {
-                const response = await fetch(`${API_URL}/api/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: price }) });
-                const data = await response.json(); if (data.success) { gameState = data.user; saveToLocal(); }
-            } catch (err) {}
+            try { const response = await fetch(`${API_URL}/api/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: price }) }); const data = await response.json(); if (data.success) { gameState = data.user; saveToLocal(); } } catch (err) {}
             updateUI();
         }
 
-        // Исправлено: чистый вызов шеринга реферальной ссылки
         function copyInviteLink() {
             const link = "https://t.me" + /richmining_bot/ + "?start=ref" + telegramId;
             try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link); } } catch (e) {}
-            const shareUrl = "https://t.me/sharerichmining_bot/=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей! 🍯🐝");
+            const shareUrl = "https://t.me"= + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей! 🍯🐝");
             if (isTelegram && window.Telegram.WebApp.openLink) { window.Telegram.WebApp.openLink(shareUrl); } else { window.open(shareUrl, '_blank'); }
         }
 
         setInterval(() => {
             if (gameState.profitPerHour > 0) { gameState.balance += (gameState.profitPerHour / 3600); gameState.totalEarned += (gameState.profitPerHour / 3600); }
-            if (gameState.energy < gameState.maxEnergy) { gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + (gameState.maxEnergy / 1200)); }
+            if (gameState.energy < 1000) { gameState.energy = Math.min(1000, gameState.energy + (1000 / 1200)); }
             localStorage.setItem(`bee_last_sync_${telegramId}`, Date.now().toString()); saveToLocal(); updateUI();
         }, 1000);
 
         function updateUI() {
+            let calculatedLevel = 1;
+            for (let i = 0; i < BACKEND_LEVELS.length; i++) { if (gameState.totalEarned >= BACKEND_LEVELS[i]) { calculatedLevel = i + 2; } else { break; } }
+            if (calculatedLevel > 30) calculatedLevel = 30;
+            gameState.level = calculatedLevel;
+
+            const skinElement = document.getElementById("bee-click");
+            if (skinElement) { skinElement.innerText = BEE_SKINS[gameState.level - 1] || "🐝"; }
+
+            let rankIdx = Math.min(5, Math.floor((gameState.level - 1) / 5));
+            document.getElementById("rank-display").innerText = RANK_NAMES[rankIdx];
+
             document.getElementById("balance-display").innerText = Math.floor(gameState.balance);
             document.getElementById("total-earned-display").innerText = Math.floor(gameState.totalEarned);
             document.getElementById("passive-display").innerText = gameState.profitPerHour;
             document.getElementById("level-display").innerText = gameState.level;
             document.getElementById("click-power-display").innerText = gameState.multitapLevel;
-            document.getElementById("energy-display").innerText = `${Math.floor(gameState.energy)} / ${gameState.maxEnergy}`;
+            document.getElementById("energy-display").innerText = `${Math.floor(gameState.energy)} / 1000`;
             
             let currentLvlIdx = gameState.level - 1;
             let currentLevelMin = currentLvlIdx > 0 ? BACKEND_LEVELS[currentLvlIdx - 1] : 0;
@@ -378,8 +404,8 @@
             let progressPercent = Math.max(1, Math.min(100, ((gameState.totalEarned - currentLevelMin) / (currentLevelMax - currentLevelMin)) * 100));
             const bar = document.getElementById("level-progress"); if (bar) { bar.style.width = `${progressPercent}%`; bar.style.backgroundPosition = `${100 - progressPercent}% 0px`; }
 
-            document.getElementById("lvl-multitap").innerText = gameState.multitapLevel; document.getElementById("lvl-energy").innerText = gameState.energyLimitLevel; document.getElementById("lvl-offline").innerText = gameState.offlineMiningLevel;
-            document.getElementById("price-multitap").innerText = Math.floor(200 * Math.pow(1.5, gameState.multitapLevel - 1)); document.getElementById("price-energy").innerText = Math.floor(300 * Math.pow(1.5, gameState.energyLimitLevel - 1)); document.getElementById("price-offline").innerText = Math.floor(500 * Math.pow(1.5, gameState.offlineMiningLevel - 1));
+            document.getElementById("lvl-multitap").innerText = gameState.multitapLevel; document.getElementById("lvl-offline").innerText = gameState.offlineMiningLevel;
+            document.getElementById("price-multitap").innerText = Math.floor(200 * Math.pow(1.5, gameState.multitapLevel - 1)); document.getElementById("price-offline").innerText = Math.floor(500 * Math.pow(1.5, gameState.offlineMiningLevel - 1));
 
             Object.keys(CARDS_CONFIG).forEach(cardId => {
                 const card = gameState.purchasedCards.find(c => c.cardId === cardId); const currentLevel = card ? card.level : 0;
@@ -394,18 +420,11 @@
                 else { statusText.style.color = "#ffcc00"; statusText.innerText = `Собрано: ${currentCombo.length} / 2`; slot1.innerText = currentCombo.length >= 1 ? "🐝" : "❓"; slot1.style.borderColor = currentCombo.length >= 1 ? "#ffcc00" : "#555"; slot2.innerText = currentCombo.length >= 2 ? "🐝" : "❓"; slot2.style.borderColor = currentCombo.length >= 2 ? "#ffcc00" : "#555"; }
             }
 
-            const btn = document.getElementById("custom-wallet-btn");
-            const msg = document.getElementById("wallet-status-msg");
+            const btn = document.getElementById("custom-wallet-btn"); const msg = document.getElementById("wallet-status-msg");
             if (msg && btn) {
-                if (gameState.walletAddress) { 
-                    msg.innerText = "Подключено! ✅"; msg.style.color = "#00ff66";
-                    btn.innerText = "Disconnect ❌"; btn.style.background = "#ff3333"; btn.style.boxShadow = "0 4px 15px rgba(255,51,51,0.3)";
-                } else { 
-                    msg.innerText = "Кошелек не подключен ❌"; msg.style.color = "#ffcc00";
-                    btn.innerText = "Connect Wallet 💎"; btn.style.background = "#0098ea"; btn.style.boxShadow = "0 4px 15px rgba(0,152,234,0.3)";
-                }
+                if (gameState.walletAddress) { msg.innerText = "Подключено! ✅"; msg.style.color = "#00ff66"; btn.innerText = "Disconnect ❌"; btn.style.background = "#ff3333"; btn.style.boxShadow = "0 4px 15px rgba(255,51,51,0.3)"; } 
+                else { msg.innerText = "Кошелек не подключен ❌"; msg.style.color = "#ffcc00"; btn.innerText = "Connect Wallet 💎"; btn.style.background = "#0098ea"; btn.style.boxShadow = "0 4px 15px rgba(0,152,234,0.3)"; }
             }
-
             const refs = gameState.referrals || []; document.getElementById("referrals-count").innerText = refs.length;
             const container = document.getElementById("friends-list"); if (container) { container.innerHTML = refs.length === 0 ? "<p style='color:#aaa;padding:10px;'>В вашем рое пока пусто</p>" : ""; refs.forEach(r => { container.innerHTML += `<div class='card' style='margin:5px auto;'>🐝 <b>${r.username || 'Пчёлка'}</b></div>`; }); }
         }
@@ -413,4 +432,5 @@
         window.onload = loadGameAndSync;
     </script>
 </body>
+</html>
 
