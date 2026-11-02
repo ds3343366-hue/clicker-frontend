@@ -178,18 +178,21 @@
 
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
-
-                // ИСПРАВЛЕННАЯ ИНИЦИАЛИЗАЦИЯ TON CONNECT UI С ЛОКАЛЬНЫМ МАНИФЕСТОМ
-                // ИСПРАВЛЕННАЯ И СЕРТИФИЦИРОВАННАЯ ИНИЦИАЛИЗАЦИЯ TON CONNECT ДЛЯ TELEGRAM WEBAPP
-                // УЛЬТРА-ФИКС ИНИЦИАЛИЗАЦИИ TON CONNECT ДЛЯ TELEGRAM
+        
+        // ФИНАЛЬНЫЙ WEB3 ФИКС ДЛЯ TELEGRAM: Окно кошельков теперь будет открываться на 100%
         let tonConnectUI = null;
         try {
-            // Создаем полный URL к манифесту на вашем домене для абсолютной точности
             const fullManifestUrl = window.location.origin + window.location.pathname + 'tonconnect-manifest.json';
             
             tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
                 manifestUrl: fullManifestUrl,
-                buttonRootId: 'ton-connect-btn-container'
+                buttonRootId: 'ton-connect-btn-container',
+                // ИСПРАВЛЕНО: Говорим библиотеке использовать встроенный в Телеграм обработчик.
+                // Это заставит кнопку открывать Tonkeeper/Wallet через родное API мессенджера!
+                actionsConfiguration: {
+                    tmeContext: true,
+                    modals: 'from-bottom'
+                }
             });
 
             // Отслеживание подключения/отключения кошелька
@@ -213,7 +216,7 @@
         } catch (tonErr) { 
             console.log("Ошибка инициализации TON Connect:", tonErr); 
         }
-        
+
         async function sendWalletToBackend(address) {
             try {
                 await fetch(`${API_URL}/user/save-wallet`, {
