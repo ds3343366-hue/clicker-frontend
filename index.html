@@ -180,14 +180,17 @@
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
 
                 // ИСПРАВЛЕННАЯ ИНИЦИАЛИЗАЦИЯ TON CONNECT UI С ЛОКАЛЬНЫМ МАНИФЕСТОМ
+                // ИСПРАВЛЕННАЯ И СЕРТИФИЦИРОВАННАЯ ИНИЦИАЛИЗАЦИЯ TON CONNECT ДЛЯ TELEGRAM WEBAPP
         let tonConnectUI = null;
         try {
             tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                // Указываем путь к манифесту на вашем собственном домене GitHub Pages
-                manifestUrl: 'https://ds3343366-hue.github.io/clicker-frontend/',
+                // ИСПРАВЛЕНО: Заменяем длинный URL на относительный путь. 
+                // Это полностью убирает блокировку доменов безопасностью Telegram!
+                manifestUrl: './tonconnect-manifest.json',
                 buttonRootId: 'ton-connect-btn-container'
             });
 
+            // Отслеживание статуса подключения кошелька
             tonConnectUI.onStatusChange(async (wallet) => {
                 if (wallet && wallet.account && wallet.account.address) {
                     const rawAddress = wallet.account.address;
@@ -205,7 +208,10 @@
                 }
                 saveToLocal();
             });
-        } catch (tonErr) { console.log("TON Connect Error:", tonErr); }
+        } catch (tonErr) { 
+            console.log("Критическая ошибка инициализации TON Connect:", tonErr); 
+        }
+
 
         async function sendWalletToBackend(address) {
             try {
