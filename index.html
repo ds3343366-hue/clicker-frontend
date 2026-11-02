@@ -26,7 +26,8 @@
         .progress-bar { width: 1%; height: 100%; transition: width 0.3s ease, background 0.5s ease; box-shadow: 0 0 8px rgba(255,255,255,0.5); background: linear-gradient(90deg, #ff3333 0%, #ffcc00 50%, #00ff66 100%) no-repeat; background-size: 360px 100%; }
         .clear { clear: both; }
         .main-stats { background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,204,0,0.1); }
-        #ton-connect-btn-container { display: flex; justify-content: center; margin: 20px auto; min-height: 40px; }
+        .web3-btn { background: #0098ea; color: #fff; border: none; padding: 14px 24px; font-weight: bold; border-radius: 12px; cursor: pointer; font-size: 16px; width: 100%; box-shadow: 0 4px 15px rgba(0, 152, 234, 0.3); transition: all 0.2s ease; margin: 15px 0; float: none; }
+        .web3-btn:active { transform: scale(0.98); }
         tc-root { z-index: 99999 !important; position: relative; }
         @keyframes pulseGlow { from { transform: scale(0.98); box-shadow: 0 0 15px #ffcc00; } to { transform: scale(1.02); box-shadow: 0 0 30px #ffaa00; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -119,14 +120,14 @@
         <div id="friends-list" style="max-height: 220px; overflow-y: auto;"></div>
     </div>
 
-    <!-- ВКЛАДКА 5: AIRDROP -->
+    <!-- ВКЛАДКА 5: AIRDROP С КЛИКАБЕЛЬНОЙ НЕЗАВИСИМОЙ КНОПКОЙ -->
     <div id="tab-airdrop" class="tab-content">
         <h3 style="color: #ffcc00;">Программа AirDrop 💎</h3>
         <div class="card" style="text-align: center; border-color: #ffcc00;">
             <strong style="font-size: 18px; color: #ffcc00;">Привязка TON Кошелька</strong>
             <p style="font-size: 13px; color: #aaa; margin: 10px 0;">Подключи свой TON кошелек для фиксации участия в будущем AirDrop.</p>
-            <div id="ton-connect-btn-container"></div>
-            <div id="wallet-status-msg" style="font-size: 13px; font-weight: bold; color: #ffcc00; margin-top: 10px;">Кошелек не подключен ❌</div>
+            <button id="custom-wallet-btn" class="web3-btn" onclick="handleWalletAction()">Connect Wallet 💎</button>
+            <div id="wallet-status-msg" style="font-size: 13px; font-weight: bold; color: #ffcc00; margin-top: 12px;">Кошелек не подключен ❌</div>
         </div>
     </div>
 
@@ -138,7 +139,7 @@
         <div class="menu-item" onclick="switchTab('airdrop', this)">💎 AirDrop</div>
     </div>
     <script>
-        // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render (без слэша на конце)
+        // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
         // ⚠️ ВАЖНО: Укажите юзернейм вашего бота без значка @
         const BOT_USERNAME = "richmining_bot"; 
@@ -179,44 +180,47 @@
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
 
-                // ИСПРАВЛЕННАЯ СВЕРХЗАЩИЩЕННАЯ ИНИЦИАЛИЗАЦИЯ TON CONNECT ДЛЯ TELEGRAM
+        // Инициализация ядра без авто-отрисовки кнопки. 
+        // Встраиваем манифест строкой Base64 для 100% обхода ограничений безопасности ТГ.
         let tonConnectUI = null;
         try {
-            // Упаковываем манифест прямо в код через Data URL (строго в формате Base64 JSON)
-            // Это полностью отключает сетевые запросы к файлам и обходит блокировки ТГ!
-            const manifestObject = {
-                url: "https://github.io",
-                name: "Bee GameFi Hive Clicker"
-            };
-            const base64Manifest = btoa(unescape(encodeURIComponent(JSON.stringify(manifestObject))));
+            const manifestObj = { url: window.location.origin + window.location.pathname, name: "Bee Clicker" };
+            const base64Manifest = btoa(unescape(encodeURIComponent(JSON.stringify(manifestObj))));
             const embeddedManifestUrl = "data:application/json;base64," + base64Manifest;
 
             tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                manifestUrl: embeddedManifestUrl,
-                buttonRootId: 'ton-connect-btn-container'
+                manifestUrl: embeddedManifestUrl
             });
 
-            // Отслеживание подключения/отключения кошелька
+            // Отслеживание состояния кошелька
             tonConnectUI.onStatusChange(async (wallet) => {
+                const btn = document.getElementById("custom-wallet-btn");
+                const msg = document.getElementById("wallet-status-msg");
+                
                 if (wallet && wallet.account && wallet.account.address) {
-                    const rawAddress = wallet.account.address;
-                    gameState.walletAddress = rawAddress;
-                    document.getElementById("wallet-status-msg").innerText = "Подключено! ✅";
-                    document.getElementById("wallet-status-msg").style.color = "#00ff66";
-                    await sendWalletToBackend(rawAddress);
+                    gameState.walletAddress = wallet.account.address;
+                    if (msg) { msg.innerText = "Подключено! ✅"; msg.style.color = "#00ff66"; }
+                    if (btn) { btn.innerText = "Disconnect ❌"; btn.style.background = "#ff3333"; btn.style.boxShadow = "0 4px 15px rgba(255,51,51,0.3)"; }
+                    await sendWalletToBackend(wallet.account.address);
                 } else {
-                    if (gameState.walletAddress !== "") {
-                        gameState.walletAddress = "";
-                        document.getElementById("wallet-status-msg").innerText = "Кошелек не подключен ❌";
-                        document.getElementById("wallet-status-msg").style.color = "#ffcc00";
-                        await sendWalletToBackend("");
-                    }
+                    gameState.walletAddress = "";
+                    if (msg) { msg.innerText = "Кошелек не подключен ❌"; msg.style.color = "#ffcc00"; }
+                    if (btn) { btn.innerText = "Connect Wallet 💎"; btn.style.background = "#0098ea"; btn.style.boxShadow = "0 4px 15px rgba(0,152,234,0.3)"; }
+                    await sendWalletToBackend("");
                 }
                 saveToLocal();
             });
-        } catch (tonErr) { 
-            console.log("Критический сбой инициализации Web3:", tonErr); 
+        } catch (tonErr) { console.log("Web3 Core Error:", tonErr); }
+        // Действие при клике на нашу кастомную кнопку
+        function handleWalletAction() {
+            if (!tonConnectUI) return;
+            if (tonConnectUI.connected) {
+                tonConnectUI.disconnect();
+            } else {
+                tonConnectUI.openModal();
+            }
         }
+
         async function sendWalletToBackend(address) {
             try {
                 await fetch(`${API_URL}/api/user/save-wallet`, {
@@ -234,10 +238,6 @@
                 const targetTab = document.getElementById(`tab-${tabId}`);
                 if (targetTab) { targetTab.style.display = 'block'; targetTab.classList.add('active'); }
                 if (menuItem) menuItem.classList.add('active');
-
-                if (tabId === 'airdrop' && tonConnectUI) {
-                    tonConnectUI.uiOptions = { buttonRootId: 'ton-connect-btn-container' };
-                }
             } catch (err) { console.error("Ошибка вкладок:", err); }
         }
 
@@ -351,10 +351,11 @@
             updateUI();
         }
 
+        // Исправлено: чистый вызов шеринга реферальной ссылки
         function copyInviteLink() {
             const link = "https://t.me" + /richmining_bot/ + "?start=ref" + telegramId;
             try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link); } } catch (e) {}
-            const shareUrl = "https://t.me/sharerichmining_bot/=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей! 🍯🐝");
+            const shareUrl = "https://t.me/share/richmining_bot/=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей! 🍯🐝");
             if (isTelegram && window.Telegram.WebApp.openLink) { window.Telegram.WebApp.openLink(shareUrl); } else { window.open(shareUrl, '_blank'); }
         }
 
@@ -394,10 +395,16 @@
                 else { statusText.style.color = "#ffcc00"; statusText.innerText = `Собрано: ${currentCombo.length} / 2`; slot1.innerText = currentCombo.length >= 1 ? "🐝" : "❓"; slot1.style.borderColor = currentCombo.length >= 1 ? "#ffcc00" : "#555"; slot2.innerText = currentCombo.length >= 2 ? "🐝" : "❓"; slot2.style.borderColor = currentCombo.length >= 2 ? "#ffcc00" : "#555"; }
             }
 
-            const walletMsg = document.getElementById("wallet-status-msg");
-            if (walletMsg) {
-                if (gameState.walletAddress) { walletMsg.innerText = "Подключено! ✅"; walletMsg.style.color = "#00ff66"; } 
-                else { walletMsg.innerText = "Кошелек не подключен ❌"; walletMsg.style.color = "#ffcc00"; }
+            const btn = document.getElementById("custom-wallet-btn");
+            const msg = document.getElementById("wallet-status-msg");
+            if (msg && btn) {
+                if (gameState.walletAddress) { 
+                    msg.innerText = "Подключено! ✅"; msg.style.color = "#00ff66";
+                    btn.innerText = "Disconnect ❌"; btn.style.background = "#ff3333"; btn.style.boxShadow = "0 4px 15px rgba(255,51,51,0.3)";
+                } else { 
+                    msg.innerText = "Кошелек не подключен ❌"; msg.style.color = "#ffcc00";
+                    btn.innerText = "Connect Wallet 💎"; btn.style.background = "#0098ea"; btn.style.boxShadow = "0 4px 15px rgba(0,152,234,0.3)";
+                }
             }
 
             const refs = gameState.referrals || []; document.getElementById("referrals-count").innerText = refs.length;
@@ -407,5 +414,4 @@
         window.onload = loadGameAndSync;
     </script>
 </body>
-</html>
 
