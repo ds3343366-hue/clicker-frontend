@@ -179,14 +179,24 @@
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
 
-        // ИСПРАВЛЕНО: Чистая инициализация TON Connect UI с относительным путём
+                // ИСПРАВЛЕННАЯ СВЕРХЗАЩИЩЕННАЯ ИНИЦИАЛИЗАЦИЯ TON CONNECT ДЛЯ TELEGRAM
         let tonConnectUI = null;
         try {
+            // Упаковываем манифест прямо в код через Data URL (строго в формате Base64 JSON)
+            // Это полностью отключает сетевые запросы к файлам и обходит блокировки ТГ!
+            const manifestObject = {
+                url: "https://github.io",
+                name: "Bee GameFi Hive Clicker"
+            };
+            const base64Manifest = btoa(unescape(encodeURIComponent(JSON.stringify(manifestObject))));
+            const embeddedManifestUrl = "data:application/json;base64," + base64Manifest;
+
             tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                manifestUrl: './tonconnect-manifest.json',
+                manifestUrl: embeddedManifestUrl,
                 buttonRootId: 'ton-connect-btn-container'
             });
 
+            // Отслеживание подключения/отключения кошелька
             tonConnectUI.onStatusChange(async (wallet) => {
                 if (wallet && wallet.account && wallet.account.address) {
                     const rawAddress = wallet.account.address;
@@ -204,7 +214,9 @@
                 }
                 saveToLocal();
             });
-        } catch (tonErr) { console.log("TON Connect Error:", tonErr); }
+        } catch (tonErr) { 
+            console.log("Критический сбой инициализации Web3:", tonErr); 
+        }
         async function sendWalletToBackend(address) {
             try {
                 await fetch(`${API_URL}/api/user/save-wallet`, {
@@ -342,7 +354,7 @@
         function copyInviteLink() {
             const link = "https://t.me" + /richmining_bot/ + "?start=ref" + telegramId;
             try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link); } } catch (e) {}
-            const shareUrl = "https://t.meshare/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей! 🍯🐝");
+            const shareUrl = "https://t.me/sharerichmining_bot/=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей! 🍯🐝");
             if (isTelegram && window.Telegram.WebApp.openLink) { window.Telegram.WebApp.openLink(shareUrl); } else { window.open(shareUrl, '_blank'); }
         }
 
