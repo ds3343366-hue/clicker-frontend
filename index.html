@@ -28,7 +28,6 @@
         .main-stats { background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,204,0,0.1); }
         .web3-btn { background: #0098ea; color: #fff; border: none; padding: 14px 24px; font-weight: bold; border-radius: 12px; cursor: pointer; font-size: 16px; width: 100%; box-shadow: 0 4px 15px rgba(0, 152, 234, 0.3); transition: all 0.2s ease; margin: 15px 0; float: none; }
         .web3-btn:active { transform: scale(0.98); }
-        /* Красивое кастомное модальное Web3-меню выбора кошельков */
         .wallet-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
         .wallet-modal-content { background: #1a0f02; border: 2px solid #ffcc00; border-radius: 20px; width: 90%; max-width: 360px; padding: 25px; box-shadow: 0 0 30px rgba(255,204,0,0.2); animation: fadeIn 0.2s ease; text-align: center; }
         .wallet-option { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,204,0,0.2); padding: 12px 15px; border-radius: 12px; margin: 12px 0; cursor: pointer; transition: all 0.2s ease; }
@@ -48,7 +47,7 @@
             <div>Пассив улья: <span style="color:#ffcc00;"><span id="passive-display">0</span>/ч</span></div>
         </div>
         <h1 style="color: #ffcc00; font-size: 38px; margin: 12px 0; text-shadow: 0 0 15px rgba(255,204,0,0.4);">🍯 <span id="balance-display">0</span></h1>
-        <div style="font-size: 14px; margin-top: 5px;">Ранг: <span id="rank-display" style="color: #ffcc00; font-weight: bold;">Рабочая Пчела</span> (<span id="level-display">1</span>/30)</div>
+        <div style="font-size: 14px; margin-top: 5px;">Ранг: <span id="rank-display" style="color: #ffcc00; font-weight: bold;">Личинка 🥚</span> (<span id="level-display">1</span>/30)</div>
         <div class="progress-container">
             <div id="level-progress" class="progress-bar"></div>
         </div>
@@ -59,10 +58,11 @@
     <div id="tab-click" class="tab-content active">
         <div class="bee-container">
             <div class="neon-glow"></div>
-            <div id="bee-click">🐝</div>
+            <div id="bee-click">🥚</div>
         </div>
         <div style="font-size: 18px; font-weight: bold; color: #ffcc00; text-shadow: 0 0 5px rgba(255,204,0,0.3);">⚡ <span id="energy-display">1000 / 1000</span></div>
     </div>
+
     <!-- ВКЛАДКА 2: СОТЫ С БЛОКОМ ЕЖЕДНЕВНОГО КОМБО -->
     <div id="tab-cards" class="tab-content">
         <h3 style="color: #ffcc00;">Развитие Бизнес-Сот 📊</h3>
@@ -208,7 +208,6 @@
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
 
-        // Красивые ранги пчелок (1-30 уровни разделены по 6 рангам)
         const RANK_NAMES = [
             "Личинка 🥚", "Рабочая Пчела 🐝", "Сборщик Нектара 🌸", 
             "Гвардеец Улья 🛡️", "Кибер-Пчела ⚡", "Королева Роя 👑"
@@ -218,6 +217,7 @@
             "🍯", "🍯", "🍯", "🍯", "🍯", "🛡️", "🛡️", "🛡️", "🛡️", "🛡️",
             "⚡", "⚡", "⚡", "⚡", "⚡", "👑", "👑", "👑", "👑", "🚀"
         ];
+
         let tonConnectUI = null;
         try {
             const manifestObj = { url: window.location.origin + window.location.pathname, name: "Bee Clicker" };
@@ -243,7 +243,6 @@
                 saveToLocal();
             });
         } catch (tonErr) { console.log("Web3 Error:", tonErr); }
-
         function handleWalletAction() {
             if (!tonConnectUI) return;
             if (tonConnectUI.connected) { tonConnectUI.disconnect(); } 
@@ -265,6 +264,7 @@
                 });
             } catch (err) { console.log("Ошибка отправки кошелька"); }
         }
+
         function buyEnergyBoost(amount, cost) {
             if (gameState.balance < cost) { alert("Недостаточно мёда для пополнения бака! 🍯"); return; }
             if (gameState.energy >= 1000) { alert("Ваш бак энергии уже полностью заполнен! ⚡"); return; }
@@ -301,7 +301,7 @@
             const localData = localStorage.getItem(`bee_game_state_${telegramId}`);
             if (localData) { gameState = JSON.parse(localData); updateUI(); calculateLocalOffline(); }
             if (isTelegram && window.Telegram.WebApp.CloudStorage) {
-                window.Telegram.WebApp.CloudStorage.setItem("bee_hive_game_save", stateStr, (err, value) => {
+                window.Telegram.WebApp.CloudStorage.getItem("bee_hive_game_save", (err, value) => {
                     if (!err && value) { gameState = JSON.parse(value); updateUI(); }
                     syncWithBackend();
                 });
@@ -367,9 +367,8 @@
         }
 
         function copyInviteLink() {
-            const link = "https://t.me" + /richmining_bot/ + "?start=ref" + telegramId;
+            const link = "https://t.me" + BOT_USERNAME + "?start=ref" + telegramId;
             try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link); } } catch (e) {}
-            const shareUrl = "https://t.me"= + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей! 🍯🐝");
             if (isTelegram && window.Telegram.WebApp.openLink) { window.Telegram.WebApp.openLink(shareUrl); } else { window.open(shareUrl, '_blank'); }
         }
 
