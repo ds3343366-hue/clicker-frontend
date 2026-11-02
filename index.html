@@ -167,7 +167,7 @@
         <div class="menu-item" onclick="switchTab('airdrop', this)">💎 AirDrop</div>
     </div>
     <script>
-        // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render
+        // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render (без слэша на конце!)
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
         // ⚠️ ВАЖНО: Укажите юзернейм вашего бота без значка @
         const BOT_USERNAME = "richmining_bot"; 
@@ -290,22 +290,18 @@
         }
 
         function saveToLocal() { 
-            const stateStr = JSON.stringify(gameState);
-            localStorage.setItem(`bee_game_state_${telegramId}`, stateStr); 
-            if (isTelegram && window.Telegram.WebApp.CloudStorage) {
-                window.Telegram.WebApp.CloudStorage.setItem("bee_hive_game_save", stateStr, (err) => {});
-            }
+            localStorage.setItem(`bee_game_state_${telegramId}`, JSON.stringify(gameState)); 
         }
 
+        // ИСПРАВЛЕНО: Безопасный, очищенный от бесконечных таймаутов метод мгновенного запуска игры
         function loadGameAndSync() {
             const localData = localStorage.getItem(`bee_game_state_${telegramId}`);
-            if (localData) { gameState = JSON.parse(localData); updateUI(); calculateLocalOffline(); }
-            if (isTelegram && window.Telegram.WebApp.CloudStorage) {
-                window.Telegram.WebApp.CloudStorage.getItem("bee_hive_game_save", (err, value) => {
-                    if (!err && value) { gameState = JSON.parse(value); updateUI(); }
-                    syncWithBackend();
-                });
-            } else { syncWithBackend(); }
+            if (localData) { 
+                gameState = JSON.parse(localData); 
+                updateUI(); 
+                calculateLocalOffline(); 
+            }
+            syncWithBackend();
         }
 
         function calculateLocalOffline() {
@@ -325,7 +321,8 @@
         async function syncWithBackend() {
             try {
                 const response = await fetch(`${API_URL}/api/user/sync?v=${Date.now()}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId }) });
-                const data = await response.json(); if (data.success) { gameState = data.user; saveToLocal(); }
+                const data = await response.json(); 
+                if (data.success) { gameState = data.user; saveToLocal(); }
             } catch (err) {}
             updateUI();
         }
@@ -369,6 +366,7 @@
         function copyInviteLink() {
             const link = "https://t.me" + BOT_USERNAME + "?start=ref" + telegramId;
             try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link); } } catch (e) {}
+            const shareUrl = "https://t.meshare/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей! 🍯🐝");
             if (isTelegram && window.Telegram.WebApp.openLink) { window.Telegram.WebApp.openLink(shareUrl); } else { window.open(shareUrl, '_blank'); }
         }
 
