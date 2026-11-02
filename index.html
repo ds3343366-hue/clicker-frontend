@@ -6,7 +6,7 @@
     <title>Bee GameFi Hive Clicker</title>
     <!-- Подключаем Telegram Web App SDK -->
     <script src="https://telegram.org"></script>
-    <!-- Подключаем официальный скрипт TON Connect UI -->
+    <!-- Подключаем стабильную версию TON Connect UI -->
     <script src="https://unpkg.com"></script>
     <style>
         body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: radial-gradient(circle, #2c1a04 0%, #140b01 100%); color: #fff; text-align: center; padding: 20px; margin: 0; min-height: 100vh; }
@@ -26,8 +26,8 @@
         .progress-bar { width: 1%; height: 100%; transition: width 0.3s ease, background 0.5s ease; box-shadow: 0 0 8px rgba(255,255,255,0.5); background: linear-gradient(90deg, #ff3333 0%, #ffcc00 50%, #00ff66 100%) no-repeat; background-size: 360px 100%; }
         .clear { clear: both; }
         .main-stats { background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,204,0,0.1); }
-        #ton-connect-btn-container { display: flex; justify-content: center; margin: 20px auto; }
-        #ton-connect-btn-container div { background: #ffcc00 !important; color: #000 !important; font-weight: bold !important; border-radius: 10px !important; }
+        #ton-connect-btn-container { display: flex; justify-content: center; margin: 20px auto; min-height: 40px; }
+        tc-root { z-index: 99999 !important; position: relative; }
         @keyframes pulseGlow { from { transform: scale(0.98); box-shadow: 0 0 15px #ffcc00; } to { transform: scale(1.02); box-shadow: 0 0 30px #ffaa00; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -55,7 +55,7 @@
         </div>
         <div style="font-size: 18px; font-weight: bold; color: #ffcc00; text-shadow: 0 0 5px rgba(255,204,0,0.3);">⚡ <span id="energy-display">1000 / 1000</span></div>
     </div>
-        <!-- ВКЛАДКА 2: СОТЫ С БЛОКОМ ЕЖЕДНЕВНОГО КОМБО -->
+    <!-- ВКЛАДКА 2: СОТЫ С БЛОКОМ ЕЖЕДНЕВНОГО КОМБО -->
     <div id="tab-cards" class="tab-content">
         <h3 style="color: #ffcc00;">Развитие Бизнес-Сот 📊</h3>
         <div class="card" style="border-color: #ffaa00; background: rgba(255, 204, 0, 0.05); text-align: center;">
@@ -86,7 +86,7 @@
             <div class="clear"></div>
         </div>
     </div>
-        <!-- ВКЛАДКА 3: БУСТЫ -->
+    <!-- ВКЛАДКА 3: БУСТЫ -->
     <div id="tab-boosts" class="tab-content">
         <h3 style="color: #ffcc00;">Инженерия Улья ⚡</h3>
         <div class="card">
@@ -137,7 +137,7 @@
         <div class="menu-item" onclick="switchTab('friends', this)">👥 Друзья</div>
         <div class="menu-item" onclick="switchTab('airdrop', this)">💎 AirDrop</div>
     </div>
-        <script>
+    <script>
         // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
         // ⚠️ ВАЖНО: Укажите юзернейм вашего бота без значка @
@@ -178,24 +178,15 @@
 
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
-        
-        // ФИНАЛЬНЫЙ WEB3 ФИКС ДЛЯ TELEGRAM: Окно кошельков теперь будет открываться на 100%
+
+        // Чистая инициализация TON Connect UI с относительным путем манифеста
         let tonConnectUI = null;
         try {
-            const fullManifestUrl = window.location.origin + window.location.pathname + 'tonconnect-manifest.json';
-            
             tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                manifestUrl: fullManifestUrl,
-                buttonRootId: 'ton-connect-btn-container',
-                // ИСПРАВЛЕНО: Говорим библиотеке использовать встроенный в Телеграм обработчик.
-                // Это заставит кнопку открывать Tonkeeper/Wallet через родное API мессенджера!
-                actionsConfiguration: {
-                    tmeContext: true,
-                    modals: 'from-bottom'
-                }
+                manifestUrl: './tonconnect-manifest.json',
+                buttonRootId: 'ton-connect-btn-container'
             });
 
-            // Отслеживание подключения/отключения кошелька
             tonConnectUI.onStatusChange(async (wallet) => {
                 if (wallet && wallet.account && wallet.account.address) {
                     const rawAddress = wallet.account.address;
@@ -213,10 +204,7 @@
                 }
                 saveToLocal();
             });
-        } catch (tonErr) { 
-            console.log("Ошибка инициализации TON Connect:", tonErr); 
-        }
-
+        } catch (tonErr) { console.log("TON Connect Error:", tonErr); }
         async function sendWalletToBackend(address) {
             try {
                 await fetch(`${API_URL}/user/save-wallet`, {
@@ -226,29 +214,18 @@
                 });
             } catch (err) { console.log("Ошибка отправки кошелька"); }
         }
-                        // ИСПРАВЛЕННАЯ ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК С ПРИНУДИТЕЛЬНЫМ ВЫЗОВОМ TON CONNECT
+
         function switchTab(tabId, menuItem) {
             try {
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.style.display = 'none';
-                    tab.classList.remove('active');
-                });
-                document.querySelectorAll('.menu-item').forEach(item => {
-                    item.classList.remove('active');
-                });
+                document.querySelectorAll('.tab-content').forEach(tab => { tab.style.display = 'none'; tab.classList.remove('active'); });
+                document.querySelectorAll('.menu-item').forEach(item => { item.classList.remove('active'); });
                 const targetTab = document.getElementById(`tab-${tabId}`);
-                if (targetTab) {
-                    targetTab.style.display = 'block';
-                    targetTab.classList.add('active');
-                }
+                if (targetTab) { targetTab.style.display = 'block'; targetTab.classList.add('active'); }
                 if (menuItem) menuItem.classList.add('active');
 
-                // ИСПРАВЛЕНО: Если пользователь нажал на вкладку AirDrop, 
-                // мы принудительно заставляем TON Connect UI перерисовать кнопку в видимом контейнере!
+                // Перерендеринг триггера кнопки при открытии вкладки
                 if (tabId === 'airdrop' && tonConnectUI) {
-                    tonConnectUI.uiOptions = {
-                        buttonRootId: 'ton-connect-btn-container'
-                    };
+                    tonConnectUI.uiOptions = { buttonRootId: 'ton-connect-btn-container' };
                 }
             } catch (err) { console.error("Ошибка вкладок:", err); }
         }
@@ -290,7 +267,6 @@
                 }
             } catch (e) { console.log("Ошибка расчета офлайна"); }
         }
-
         async function syncWithBackend() {
             try {
                 const response = await fetch(`${API_URL}/user/sync?v=${Date.now()}`, {
@@ -312,7 +288,8 @@
                 accumulatedClicks += 1; saveToLocal(); updateUI();
             }
         });
-                setInterval(async () => {
+
+        setInterval(async () => {
             if (accumulatedClicks === 0) return;
             const clicksToSend = accumulatedClicks; accumulatedClicks = 0;
             try {
@@ -335,11 +312,11 @@
             if (card) { card.level += 1; } else { gameState.purchasedCards.push({ cardId: cardId, level: 1 }); }
             saveToLocal(); updateUI();
             try {
-                const response = await fetch(`${API_URL}/buy-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
+                const response = await fetch(`${API_URL}/user/buy-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
                 const data = await response.json();
                 if (data.success) { 
                     gameState = data.user; saveToLocal(); 
-                    const comboRes = await fetch(`${API_URL}/check-combo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
+                    const comboRes = await fetch(`${API_URL}/user/check-combo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
                     const comboData = await comboRes.json();
                     if (comboData.success) { gameState = comboData.user; saveToLocal(); if (comboData.comboCompleted) alert("🎉 Комбо разгадано!"); }
                 }
@@ -357,14 +334,14 @@
             if (type === 'offline') gameState.offlineMiningLevel += 1;
             saveToLocal(); updateUI();
             try {
-                const response = await fetch(`${API_URL}/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: price }) });
+                const response = await fetch(`${API_URL}/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: price }) });
                 const data = await response.json(); if (data.success) { gameState = data.user; saveToLocal(); }
             } catch (err) {}
             updateUI();
         }
 
         function copyInviteLink() {
-            const link = "https://t.me" + BOT_USERNAME + "?start=ref" + telegramId;
+            const link = "https://t.me" + /richmining_bot/ + "?start=ref" + telegramId;
             try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link); } } catch (e) {}
             const shareUrl = "https://t.meshare/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent("Залетай в мой улей! 🍯🐝");
             if (isTelegram && window.Telegram.WebApp.openLink) { window.Telegram.WebApp.openLink(shareUrl); } else { window.open(shareUrl, '_blank'); }
@@ -420,10 +397,4 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
 
