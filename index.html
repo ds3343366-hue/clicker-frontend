@@ -138,7 +138,7 @@
         <div class="menu-item" onclick="switchTab('airdrop', this)">💎 AirDrop</div>
     </div>
     <script>
-        // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render
+        // ⚠️ ВАЖНО: Укажите точный URL вашего сервера Render (без слэша на конце)
         const API_URL = "https://aaaclickerbackend.onrender.com/"; 
         // ⚠️ ВАЖНО: Укажите юзернейм вашего бота без значка @
         const BOT_USERNAME = "richmining_bot"; 
@@ -179,7 +179,7 @@
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
 
-        // Чистая инициализация TON Connect UI с относительным путем манифеста
+        // ИСПРАВЛЕНО: Чистая инициализация TON Connect UI с относительным путём
         let tonConnectUI = null;
         try {
             tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -207,7 +207,7 @@
         } catch (tonErr) { console.log("TON Connect Error:", tonErr); }
         async function sendWalletToBackend(address) {
             try {
-                await fetch(`${API_URL}/user/save-wallet`, {
+                await fetch(`${API_URL}/api/user/save-wallet`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ telegramId, walletAddress: address })
@@ -223,7 +223,6 @@
                 if (targetTab) { targetTab.style.display = 'block'; targetTab.classList.add('active'); }
                 if (menuItem) menuItem.classList.add('active');
 
-                // Перерендеринг триггера кнопки при открытии вкладки
                 if (tabId === 'airdrop' && tonConnectUI) {
                     tonConnectUI.uiOptions = { buttonRootId: 'ton-connect-btn-container' };
                 }
@@ -269,7 +268,7 @@
         }
         async function syncWithBackend() {
             try {
-                const response = await fetch(`${API_URL}/user/sync?v=${Date.now()}`, {
+                const response = await fetch(`${API_URL}/api/user/sync?v=${Date.now()}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ telegramId })
@@ -293,7 +292,7 @@
             if (accumulatedClicks === 0) return;
             const clicksToSend = accumulatedClicks; accumulatedClicks = 0;
             try {
-                await fetch(`${API_URL}/user/click`, {
+                await fetch(`${API_URL}/api/user/click`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ telegramId, clicksCount: clicksToSend })
@@ -312,11 +311,11 @@
             if (card) { card.level += 1; } else { gameState.purchasedCards.push({ cardId: cardId, level: 1 }); }
             saveToLocal(); updateUI();
             try {
-                const response = await fetch(`${API_URL}/user/buy-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
+                const response = await fetch(`${API_URL}/api/user/buy-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
                 const data = await response.json();
                 if (data.success) { 
                     gameState = data.user; saveToLocal(); 
-                    const comboRes = await fetch(`${API_URL}/user/check-combo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
+                    const comboRes = await fetch(`${API_URL}/api/user/check-combo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) });
                     const comboData = await comboRes.json();
                     if (comboData.success) { gameState = comboData.user; saveToLocal(); if (comboData.comboCompleted) alert("🎉 Комбо разгадано!"); }
                 }
@@ -334,7 +333,7 @@
             if (type === 'offline') gameState.offlineMiningLevel += 1;
             saveToLocal(); updateUI();
             try {
-                const response = await fetch(`${API_URL}/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: price }) });
+                const response = await fetch(`${API_URL}/api/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: price }) });
                 const data = await response.json(); if (data.success) { gameState = data.user; saveToLocal(); }
             } catch (err) {}
             updateUI();
