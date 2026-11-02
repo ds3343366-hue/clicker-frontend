@@ -181,16 +181,18 @@
 
                 // ИСПРАВЛЕННАЯ ИНИЦИАЛИЗАЦИЯ TON CONNECT UI С ЛОКАЛЬНЫМ МАНИФЕСТОМ
                 // ИСПРАВЛЕННАЯ И СЕРТИФИЦИРОВАННАЯ ИНИЦИАЛИЗАЦИЯ TON CONNECT ДЛЯ TELEGRAM WEBAPP
+                // УЛЬТРА-ФИКС ИНИЦИАЛИЗАЦИИ TON CONNECT ДЛЯ TELEGRAM
         let tonConnectUI = null;
         try {
+            // Создаем полный URL к манифесту на вашем домене для абсолютной точности
+            const fullManifestUrl = window.location.origin + window.location.pathname + 'tonconnect-manifest.json';
+            
             tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                // ИСПРАВЛЕНО: Заменяем длинный URL на относительный путь. 
-                // Это полностью убирает блокировку доменов безопасностью Telegram!
-                manifestUrl: './tonconnect-manifest.json',
+                manifestUrl: fullManifestUrl,
                 buttonRootId: 'ton-connect-btn-container'
             });
 
-            // Отслеживание статуса подключения кошелька
+            // Отслеживание подключения/отключения кошелька
             tonConnectUI.onStatusChange(async (wallet) => {
                 if (wallet && wallet.account && wallet.account.address) {
                     const rawAddress = wallet.account.address;
@@ -209,10 +211,9 @@
                 saveToLocal();
             });
         } catch (tonErr) { 
-            console.log("Критическая ошибка инициализации TON Connect:", tonErr); 
+            console.log("Ошибка инициализации TON Connect:", tonErr); 
         }
-
-
+        
         async function sendWalletToBackend(address) {
             try {
                 await fetch(`${API_URL}/user/save-wallet`, {
@@ -222,13 +223,30 @@
                 });
             } catch (err) { console.log("Ошибка отправки кошелька"); }
         }
-                function switchTab(tabId, menuItem) {
+                        // ИСПРАВЛЕННАЯ ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК С ПРИНУДИТЕЛЬНЫМ ВЫЗОВОМ TON CONNECT
+        function switchTab(tabId, menuItem) {
             try {
-                document.querySelectorAll('.tab-content').forEach(tab => { tab.style.display = 'none'; tab.classList.remove('active'); });
-                document.querySelectorAll('.menu-item').forEach(item => { item.classList.remove('active'); });
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.style.display = 'none';
+                    tab.classList.remove('active');
+                });
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.remove('active');
+                });
                 const targetTab = document.getElementById(`tab-${tabId}`);
-                if (targetTab) { targetTab.style.display = 'block'; targetTab.classList.add('active'); }
+                if (targetTab) {
+                    targetTab.style.display = 'block';
+                    targetTab.classList.add('active');
+                }
                 if (menuItem) menuItem.classList.add('active');
+
+                // ИСПРАВЛЕНО: Если пользователь нажал на вкладку AirDrop, 
+                // мы принудительно заставляем TON Connect UI перерисовать кнопку в видимом контейнере!
+                if (tabId === 'airdrop' && tonConnectUI) {
+                    tonConnectUI.uiOptions = {
+                        buttonRootId: 'ton-connect-btn-container'
+                    };
+                }
             } catch (err) { console.error("Ошибка вкладок:", err); }
         }
 
