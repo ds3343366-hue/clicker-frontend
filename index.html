@@ -179,11 +179,12 @@
         const CARDS_CONFIG = { ceo_card: { basePrice: 100 }, marketing_card: { basePrice: 500 }, crypto_card: { basePrice: 2000 } };
         const BACKEND_LEVELS = Array.from({length: 30}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
 
-        // Конфигурация TON Connect UI
+                // ИСПРАВЛЕННАЯ ИНИЦИАЛИЗАЦИЯ TON CONNECT UI С ЛОКАЛЬНЫМ МАНИФЕСТОМ
         let tonConnectUI = null;
         try {
             tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                manifestUrl: 'https://githubusercontent.com',
+                // Указываем путь к манифесту на вашем собственном домене GitHub Pages
+                manifestUrl: 'https://ds3343366-hue.github.io/clicker-frontend/',
                 buttonRootId: 'ton-connect-btn-container'
             });
 
