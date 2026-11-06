@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bee GameFi Hive Clicker</title>
     
-    <!-- Подключаем SDK (Telegram и TON Connect) -->
+    <!-- Подключаем скрипты SDK -->
     <script src="https://telegram.org"></script>
     <script src="https://unpkg.com"></script>
 
@@ -101,54 +101,13 @@
             cursor: pointer;
             border: 4px solid #ffd269;
         }
-        .click-circle:active {
-            transform: scale(0.92);
-        }
-        .click-circle button {
-            font-size: 95px;
-            background: none;
-            border: none;
-            outline: none;
-            pointer-events: none;
-        }
-        .energy-bar {
-            background: rgba(45, 27, 10, 0.8);
-            padding: 10px;
-            border-radius: 12px;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid #4a2f14;
-        }
-        .tab-content {
-            display: none;
-            flex-direction: column;
-            overflow-y: auto;
-            flex-grow: 1;
-            margin: 15px 0;
-        }
-        .tab-content.active {
-            display: flex;
-        }
-        .card {
-            background: linear-gradient(135deg, var(--card-bg), #3a220c);
-            padding: 15px;
-            border-radius: 14px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #543417;
-        }
-        .btn {
-            background: linear-gradient(to bottom, #ffb700, #d47a00);
-            color: #fff;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            border: 1px solid #ffda73;
-        }
+        .click-circle:active { transform: scale(0.92); }
+        .click-circle button { font-size: 95px; background: none; border: none; outline: none; pointer-events: none; }
+        .energy-bar { background: rgba(45, 27, 10, 0.8); padding: 10px; border-radius: 12px; text-align: center; font-weight: bold; border: 1px solid #4a2f14; }
+        .tab-content { display: none; flex-direction: column; overflow-y: auto; flex-grow: 1; margin: 15px 0; }
+        .tab-content.active { display: flex; }
+        .card { background: linear-gradient(135deg, var(--card-bg), #3a220c); padding: 15px; border-radius: 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #543417; }
+        .btn { background: linear-gradient(to bottom, #ffb700, #d47a00); color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; border: 1px solid #ffda73; }
         .ton-custom-btn {
             background: linear-gradient(135deg, #0098ea, #005c9e) !important;
             color: #ffffff !important;
@@ -162,37 +121,11 @@
             width: 80%;
             margin: 10px auto;
         }
-        .navigation {
-            display: flex;
-            justify-content: space-around;
-            background: #231406;
-            padding: 12px 0;
-            border-radius: 18px;
-            border: 1px solid #3d2109;
-        }
-        .nav-item {
-            background: none;
-            border: none;
-            color: #a18974;
-            font-size: 12px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .nav-item.active {
-            color: #ffb700;
-        }
-        .combo-badge {
-            background: #4a2f14;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: bold;
-            border: 1px solid var(--accent-color);
-        }
-        .combo-badge.active {
-            background: #00ff00 !important;
-            color: #000 !important;
-        }
+        .navigation { display: flex; justify-content: space-around; background: #231406; padding: 12px 0; border-radius: 18px; border: 1px solid #3d2109; }
+        .nav-item { background: none; border: none; color: #a18974; font-size: 12px; cursor: pointer; font-weight: bold; }
+        .nav-item.active { color: #ffb700; }
+        .combo-badge { background: #4a2f14; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; border: 1px solid var(--accent-color); }
+        .combo-badge.active { background: #00ff00 !important; color: #000 !important; }
     </style>
 </head>
 <body>
@@ -213,26 +146,18 @@
                 </div>
             </div>
             
-            <!-- ЕЖЕДНЕВНЫЙ ВХОД -->
             <div class="card" style="margin: 0 auto 15px auto; width: 90%; background: linear-gradient(135deg, #42270f, #2d1b0a);">
-                <div>
-                    <strong>🎁 Ежедневная Награда за Вход</strong><br>
-                    <span style="font-size: 11px; color:#c7af99;" id="daily-streak-text">Заходи каждый день и забирай +5,000 🍯</span>
-                </div>
+                <div><strong>🎁 Ежедневная Награда</strong><br><span style="font-size: 11px; color:#c7af99;">Заходи каждый день и забирай +5,000 🍯</span></div>
                 <button class="btn" id="claim-daily-btn">Забрать</button>
             </div>
-
             <div class="click-area">
                 <div class="click-circle" id="honey-bee-tap"><button id="bee-avatar">🥚</button></div>
             </div>
             <div class="energy-bar">⚡ <span id="current-energy">1000</span> / <span id="max-energy">1000</span></div>
         </div>
-
         <!-- ВКЛАДКА 2: СОТЫ -->
         <div id="tab-cards" class="tab-content">
             <h3>Развитие Бизнес-Сот 📊</h3>
-            
-            <!-- ОТКРЫТОЕ ЕЖЕДНЕВНОЕ КОМБО -->
             <div class="card" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                 <strong>🐝 Мониторинг Комбо Дня (+250k 🍯)</strong>
                 <p style="font-size: 11px; margin: 0; color:#d1bba7;">Прокачайте эти карты, чтобы совершить мгновенный Level-Up:</p>
@@ -240,11 +165,8 @@
                     <div class="combo-badge" id="combo-card-ceo">💼 CEO Карточка</div>
                     <div class="combo-badge" id="combo-card-crypto">🪙 Крипто Карточка</div>
                 </div>
-                <div style="font-size: 11px; color: var(--accent-color); font-weight: bold; margin-top: 4px;">
-                    Статус комбо: <span id="combo-status-text">В процессе поиска...</span>
-                </div>
+                <div style="font-size: 11px; color: var(--accent-color); font-weight: bold; margin-top: 4px;">Статус: <span id="combo-status-text">Ищите...</span></div>
             </div>
-
             <div class="card">
                 <div><strong>Личинка в сотах</strong><br><span style="font-size:12px; color:#c7af99;">Ур. <span id="lvl-ceo">1</span> | +10/ч</span></div>
                 <button class="btn" id="buy-ceo-card">💰 100</button>
@@ -258,6 +180,7 @@
                 <button class="btn" id="buy-crypto-card">💰 2000</button>
             </div>
         </div>
+
         <!-- ВКЛАДКА 3: БУСТЫ -->
         <div id="tab-boosts" class="tab-content">
             <h3>Инженерия Улья ⚡</h3>
@@ -275,22 +198,17 @@
             </div>
         </div>
 
-        <!-- ВКЛАДКА 4: ДРУЗЬЯ -->
+        <!-- ВКЛАДКА 4: ДРУЗЬЯ И ВКЛАДКА 5 -->
         <div id="tab-friends" class="tab-content">
             <h3>Пригласить в Рой 👥</h3>
-            <button class="btn" id="invite-btn" style="width: 100%; padding: 14px; font-size:14px; margin-bottom:15px;">
-                🔗 Пригласить Друга (Копировать Ссылку) 📋
-            </button>
+            <button class="btn" id="invite-btn" style="width: 100%; padding: 14px;">🔗 Копировать Ссылку 📋</button>
             <h4>Ваш рабочий рой (<span id="ref-count">0</span>):</h4>
             <div id="referrals-list" style="font-size: 14px; color:#c7af99;">Список пуст...</div>
         </div>
-
-        <!-- ВКЛАДКА 5: AIRDROP -->
         <div id="tab-airdrop" class="tab-content">
             <h3>Программа AirDrop 💎</h3>
             <div class="card" style="flex-direction: column; text-align: center; gap: 15px; padding: 25px 15px;">
                 <strong>Привязка TON Кошелька</strong>
-                <p style="font-size: 13px; color:#c7af99; margin: 0;">Подключи свой кошелек для фиксации участия в AirDrop.</p>
                 <button class="ton-custom-btn" id="custom-ton-btn">💎 Подключить Кошелек</button>
                 <div id="wallet-status" style="font-size: 13px; color: #ff5555; font-weight:bold;">Кошелек не подключен ❌</div>
             </div>
@@ -304,9 +222,8 @@
             <button class="nav-item" id="nav-btn-airdrop">💎<br>AirDrop</button>
         </div>
     </div>
-
     <script>
-        // === ВНИМАНИЕ: УКАЖИТЕ ВАШ РЕАЛЬНЫЙ URL С СЕРВЕРА RENDER ===
+        // === ЗАМЕНИТЕ НА ВАШ РЕАЛЬНЫЙ URL С СЕРВЕРА RENDER ===
         const BACKEND_URL = "https://aaaclickerbackend.onrender.com/"; 
 
         const tg = window.Telegram?.WebApp;
@@ -343,15 +260,16 @@
         function saveStateLocally() {
             localStorage.setItem(`bee_user_state_${telegramId}`, JSON.stringify(userData));
         }
+
         function syncUserData() {
             fetch(`${BACKEND_URL}/api/user/sync`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ telegramId, username })
+                body: JSON.stringify({ telegramId, username, localBalance: userData.balance, localTotalEarned: userData.totalEarned })
             })
             .then(res => res.json())
             .then(data => { if (data.success && data.user) { userData = data.user; saveStateLocally(); updateUI(); } })
-            .catch(err => console.error("Бэкенд спит, работаем автономно", err));
+            .catch(e => console.log("Используем локальный кэш"));
         }
 
         function recalculateLevelProgression() {
@@ -363,7 +281,6 @@
             if (targetLevel > MAX_LEVELS) targetLevel = MAX_LEVELS;
             userData.level = targetLevel;
         }
-
         function updateUI() {
             recalculateLevelProgression();
 
@@ -378,18 +295,21 @@
 
             const currentLevel = userData.level || 1;
             const totalEarned = userData.totalEarned || 0;
-            const prevLevelTarget = currentLevel === 1 ? 0 : BACKEND_LEVELS[currentLevel - 2];
             const nextLevelTarget = BACKEND_LEVELS[currentLevel - 1];
-            
-            let percent = Math.floor(((totalEarned - prevLevelTarget) / (nextLevelTarget - prevLevelTarget)) * 100);
-            percent = Math.max(0, Math.min(100, percent));
 
-            const progressBar = document.getElementById('level-progress-bar');
-            progressBar.style.width = percent + "%";
-            progressBar.style.backgroundColor = percent < 50 
-                ? `rgb(255, ${Math.floor(percent * 5.1)}, 51)` : `rgb(${Math.floor(255 - (percent - 50) * 5.1)}, 255, 51)`;
-
-            document.getElementById('level-progress-text').innerText = `До следующего уровня: ${Math.floor(nextLevelTarget - totalEarned)} 🍯`;
+            // ИСПРАВЛЕНИЕ ПОДПИСИ ЛЕНТЫ: При достижении 30 уровня финишируем подсчет остатка тапов
+            if (currentLevel >= MAX_LEVELS) {
+                document.getElementById('level-progress-bar').style.width = "100%";
+                document.getElementById('level-progress-bar').style.backgroundColor = "#00ff00";
+                document.getElementById('level-progress-text').innerText = "Все уровни пройдены! Максимальный ранг зафиксирован 👑";
+            } else {
+                const prevLevelTarget = currentLevel === 1 ? 0 : BACKEND_LEVELS[currentLevel - 2];
+                let percent = Math.floor(((totalEarned - prevLevelTarget) / (nextLevelTarget - prevLevelTarget)) * 100);
+                percent = Math.max(0, Math.min(100, percent));
+                document.getElementById('level-progress-bar').style.width = percent + "%";
+                document.getElementById('level-progress-bar').style.backgroundColor = percent < 50 ? "#ff3333" : "#00ff00";
+                document.getElementById('level-progress-text').innerText = `До следующего уровня: ${Math.floor(nextLevelTarget - totalEarned)} 🍯`;
+            }
 
             const info = getSkinAndRank(currentLevel);
             document.getElementById('user-rank').innerText = `Ранг: ${info.rank} (${currentLevel}/30)`;
@@ -411,13 +331,10 @@
             document.getElementById('buy-marketing-card').innerText = `💰 ${Math.floor(500 * Math.pow(1.5, cMkt ? cMkt.level : 0))}`;
             document.getElementById('buy-crypto-card').innerText = `💰 ${Math.floor(2000 * Math.pow(1.5, cCry ? cCry.level : 0))}`;
 
-            // Мониторинг комбо дня
-            if (userData.todayCombo?.includes('ceo_card')) document.getElementById('combo-card-ceo').classList.add('active');
-            if (userData.todayCombo?.includes('crypto_card')) document.getElementById('combo-card-crypto').classList.add('active');
             if (userData.todayCombo?.length === 2 || userData.lastComboDate?.startsWith('COMPLETED_')) {
                 document.getElementById('combo-card-ceo').classList.add('active');
                 document.getElementById('combo-card-crypto').classList.add('active');
-                document.getElementById('combo-status-text').innerText = "Получено +250,000 мёда! 🥳";
+                document.getElementById('combo-status-text').innerText = "Награда +250k зачислена! 🥳";
                 document.getElementById('combo-status-text').style.color = "#00ff00";
             }
 
@@ -427,7 +344,7 @@
                 document.getElementById('claim-daily-btn').disabled = true;
             }
         }
-        // ГЛОБАЛЬНОЕ ADDEVENTLISTENER СВЯЗЫВАНИЕ (ЗАЩИТА ОТ ИЗОЛЯЦИИ В TELEGRAM MINI APPS)
+        // РЕГИСТРАЦИЯ ОБРАБОТЧИКОВ (ПОЛНЫЙ ОБХОД ОГРАНИЧЕНИЙ TELEGRAM MINI APPS)
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('nav-btn-click').addEventListener('click', function() { openTab('tab-click', this); });
             document.getElementById('nav-btn-cards').addEventListener('click', function() { openTab('tab-cards', this); });
@@ -457,7 +374,7 @@
             function upgradeAction(type) {
                 const cost = type === 'multitap' ? userData.multitapLevel * 200 : userData.offlineMiningLevel * 500;
                 fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: Number(cost) }) })
-                .then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } });
+                .then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); saveStateLocally(); } });
             }
             document.getElementById('boost-multitap').addEventListener('click', () => upgradeAction('multitap'));
             document.getElementById('boost-offline').addEventListener('click', () => upgradeAction('offline'));
@@ -467,7 +384,7 @@
                 let targetEnergy = userData.energy + boostVal;
                 if (targetEnergy > 1000) targetEnergy = 1000;
                 userData.energy = targetEnergy; updateUI(); saveStateLocally();
-                fetch(`${BACKEND_URL}/api/user/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, username }) });
+                fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type: 'energy', cost: 150 }) });
             });
 
             document.getElementById('claim-daily-btn').addEventListener('click', () => {
@@ -475,22 +392,24 @@
                 localStorage.setItem(`bee_last_claim_${telegramId}`, todayStr);
                 userData.balance += 5000; userData.totalEarned += 5000;
                 updateUI(); saveStateLocally();
-                if (tg) tg.showAlert("🎁 Твоя ежедневная награда зачислена: +5,000 🍯!");
-                fetch(`${BACKEND_URL}/api/user/click`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, clicksCount: 0 }) });
+                fetch(`${BACKEND_URL}/api/user/click`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, clicksCount: 0, clientBalance: userData.balance, clientTotalEarned: userData.totalEarned }) });
             });
 
             document.getElementById('custom-ton-btn').addEventListener('click', () => {
-                if (window.tonConnectUIInstance) { window.tonConnectUIInstance.openModal().catch(err => console.error(err)); }
+                if (window.tonConnectUIInstance) { window.tonConnectUIInstance.openModal().catch(e => console.log(e)); }
+            });
+            
+            document.getElementById('invite-btn').addEventListener('click', () => {
+                const refLink = `https://t.me/richmining_bot/`;
+                navigator.clipboard.writeText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
             });
         });
 
-        function copyRefLink() {
-            const refLink = `https://t.me/richmining_bot/`;
-            navigator.clipboard.writeText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
-        }
-
+        // ПРИНУДИТЕЛЬНОЕ КРИТИЧЕСКОЕ СОХРАНЕНИЕ ПРИ СМАХИВАНИИ ПРИЛОЖЕНИЯ
         window.addEventListener('beforeunload', saveStateLocally);
         window.addEventListener('pagehide', saveStateLocally);
+        window.addEventListener('unload', saveStateLocally);
+        if (tg) { tg.onEvent('viewportChanged', saveStateLocally); }
 
         const sdkNamespace = window.TonConnectSDK ? window.TonConnectSDK : window.TON_CONNECT_UI;
         if (sdkNamespace && sdkNamespace.TonConnectUI) {
@@ -509,11 +428,15 @@
             });
         }
 
+        // Секундный цикл непрерывного майнинга (с фоновым бэкапом каждые 5 сек)
+        let loopCount = 0;
         setInterval(() => {
             if (userData && userData.profitPerHour > 0) {
                 const pps = userData.profitPerHour / 3600;
                 userData.balance += pps; userData.totalEarned += pps;
                 document.getElementById('user-balance').innerText = Math.floor(userData.balance);
+                loopCount++;
+                if (loopCount >= 5) { saveStateLocally(); loopCount = 0; }
             }
         }, 1000);
 
