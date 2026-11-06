@@ -205,8 +205,7 @@
             </div>
             <div class="energy-bar">⚡ <span id="current-energy">1000</span> / <span id="max-energy">1000</span></div>
         </div>
-
-        <!-- ВКЛАДКА 2: СОТЫ -->
+                <!-- ВКЛАДКА 2: СОТЫ -->
         <div id="tab-cards" class="tab-content">
             <h3>Развитие Бизнес-Сот 📊</h3>
             <div class="card" style="flex-direction: column; align-items: flex-start;">
@@ -220,15 +219,16 @@
             </div>
             <div class="card">
                 <div><strong>Личинка в сотах</strong><br><span style="font-size:12px; color:#c7af99;">Ур. <span id="lvl-ceo">1</span> | +10/ч</span></div>
-                <button class="btn" id="buy-ceo-card">💰 100</button>
+                <!-- ФИКС: Функция привязана намертво к тегу -->
+                <button class="btn" id="buy-ceo-card" onclick="executeBuyCard('ceo_card')">💰 100</button>
             </div>
             <div class="card">
                 <div><strong>Маркетинг роя</strong><br><span style="font-size:12px; color:#c7af99;">Ур. <span id="lvl-marketing">0</span> | +45/ч</span></div>
-                <button class="btn" id="buy-marketing-card">💰 500</button>
+                <button class="btn" id="buy-marketing-card" onclick="executeBuyCard('marketing_card')">💰 500</button>
             </div>
             <div class="card">
                 <div><strong>Крипто-Пчела</strong><br><span style="font-size:12px; color:#c7af99;">Ур. <span id="lvl-crypto">0</span> | +200/ч</span></div>
-                <button class="btn" id="buy-crypto-card">💰 2000</button>
+                <button class="btn" id="buy-crypto-card" onclick="executeBuyCard('crypto_card')">💰 2000</button>
             </div>
         </div>
 
@@ -237,22 +237,22 @@
             <h3>Инженерия Улья ⚡</h3>
             <div class="card">
                 <div><strong>👆 Мульти-Тап</strong><br><span style="font-size:12px; color:#c7af99;">Ур. <span id="lvl-multitap">1</span></span></div>
-                <button class="btn" id="boost-multitap">💰 200</button>
+                <button class="btn" id="boost-multitap" onclick="executeUpgrade('multitap')">💰 200</button>
             </div>
             <div class="card">
                 <div><strong>🔋 Пополнить бак (<span id="energy-boost-val">300</span>)</strong><br><span style="font-size:12px; color:#c7af99;">Фиксированный буст энергии</span></div>
-                <button class="btn" id="boost-energy">💰 150</button>
+                <button class="btn" id="boost-energy" onclick="executeEnergyBoost()">💰 150</button>
             </div>
             <div class="card">
                 <div><strong>💤 Технология Сна</strong><br><span style="font-size:12px; color:#c7af99;">Ур. <span id="lvl-offline">1</span></span></div>
-                <button class="btn" id="boost-offline">💰 500</button>
+                <button class="btn" id="boost-offline" onclick="executeUpgrade('offline')">💰 500</button>
             </div>
         </div>
 
         <!-- ВКЛАДКА 4: ДРУЗЬЯ -->
         <div id="tab-friends" class="tab-content">
             <h3>Пригласить в Рой 👥</h3>
-            <button class="btn" id="invite-btn" style="width: 100%; padding: 14px; font-size:14px; margin-bottom:15px;">
+            <button class="btn" id="invite-btn" style="width: 100%; padding: 14px; font-size:14px; margin-bottom:15px;" onclick="copyRefLink()">
                 🔗 Пригласить Друга (Копировать Ссылку) 📋
             </button>
             <h4>Ваш рабочий рой (<span id="ref-count">0</span>):</h4>
@@ -265,7 +265,8 @@
             <div class="card" style="flex-direction: column; text-align: center; gap: 15px; padding: 25px 15px;">
                 <strong>Привязка TON Кошелька</strong>
                 <p style="font-size: 13px; color:#c7af99; margin: 0;">Подключи свой кошелек для фиксации участия в AirDrop.</p>
-                <button class="ton-custom-btn" id="custom-ton-btn">💎 Подключить Кошелек</button>
+                <!-- ФИКС: Кнопка кошелька теперь сама вызывает модалку без посредников -->
+                <button class="ton-custom-btn" id="custom-ton-btn" onclick="openTonModal()">💎 Подключить Кошелек</button>
                 <div id="wallet-status" style="font-size: 13px; color: #ff5555; font-weight:bold;">Кошелек не подключен ❌</div>
             </div>
         </div>
@@ -278,8 +279,8 @@
             <button class="nav-item" onclick="openTab('tab-airdrop', this)">💎<br>AirDrop</button>
         </div>
     </div>
-    <script>
-        // === ВНИМАНИЕ: УКАЖИТЕ ВАШ РЕАЛЬНЫЙ URL ИЗ RENDER ВМЕСТО ЗАГЛУШКИ ===
+        <script>
+        // === ВНИМАНИЕ: УКАЖИТЕ ВАШ РЕАЛЬНЫЙ URL ИЗ RENDER ===
         const BACKEND_URL = "https://aaaclickerbackend.onrender.com/"; 
 
         const tg = window.Telegram?.WebApp;
@@ -288,7 +289,6 @@
         const telegramId = tg?.initDataUnsafe?.user?.id?.toString() || "123456789";
         const username = tg?.initDataUnsafe?.user?.username || "Test_Bee";
         
-        // СИСТЕМА АВТОСОХРАНЕНИЯ: Мгновенное восстановление кэша при перезагрузке
         const cachedState = localStorage.getItem(`bee_user_state_${telegramId}`);
         let userData = cachedState ? JSON.parse(cachedState) : {
             balance: 0, totalEarned: 0, level: 1, profitPerHour: 0, energy: 1000, maxEnergy: 1000,
@@ -313,7 +313,6 @@
             navElement.classList.add('active');
         }
 
-        // Запись состояния во внутреннюю долговременную память смартфона (Anti-Reset)
         function saveStateLocally() {
             localStorage.setItem(`bee_user_state_${telegramId}`, JSON.stringify(userData));
         }
@@ -325,14 +324,8 @@
                 body: JSON.stringify({ telegramId, username })
             })
             .then(res => res.json())
-            .then(data => { 
-                if (data.success && data.user) { 
-                    userData = data.user; 
-                    saveStateLocally();
-                    updateUI(); 
-                } 
-            })
-            .catch(err => console.error("Бэкенд недоступен, работаем на локальной памяти", err));
+            .then(data => { if (data.success && data.user) { userData = data.user; saveStateLocally(); updateUI(); } })
+            .catch(err => console.error("Сервер спит, работаем автономно", err));
         }
 
         function updateUI() {
@@ -356,11 +349,9 @@
             const progressBar = document.getElementById('level-progress-bar');
             progressBar.style.width = percent + "%";
             progressBar.style.backgroundColor = percent < 50 
-                ? `rgb(255, ${Math.floor(percent * 5.1)}, 51)` 
-                : `rgb(${Math.floor(255 - (percent - 50) * 5.1)}, 255, 51)`;
+                ? `rgb(255, ${Math.floor(percent * 5.1)}, 51)` : `rgb(${Math.floor(255 - (percent - 50) * 5.1)}, 255, 51)`;
 
-            const remainder = nextLevelTarget - totalEarned;
-            document.getElementById('level-progress-text').innerText = remainder > 0 ? `До следующего уровня: ${Math.floor(remainder)} 🍯` : `Максимальный ранг!`;
+            document.getElementById('level-progress-text').innerText = `До следующего уровня: ${Math.floor(nextLevelTarget - totalEarned)} 🍯`;
 
             const info = getSkinAndRank(currentLevel);
             document.getElementById('user-rank').innerText = `Ранг: ${info.rank} (${currentLevel}/30)`;
@@ -382,66 +373,54 @@
             document.getElementById('buy-marketing-card').innerText = `💰 ${Math.floor(500 * Math.pow(1.5, cMkt ? cMkt.level : 0))}`;
             document.getElementById('buy-crypto-card').innerText = `💰 ${Math.floor(2000 * Math.pow(1.5, cCry ? cCry.level : 0))}`;
         }
-        // БЕЗОПАСНАЯ РЕГИСТРАЦИЯ КЛИКОВ (ОБХОД ПЕСОЧНИЦЫ TELEGRAM MINI APPS)
-        window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('honey-bee-tap').onclick = function() {
-                const power = userData.multitapLevel || 1;
-                if (userData.energy < power) return;
-                userData.energy -= power; userData.balance += power; userData.totalEarned += power; 
-                saveStateLocally();
-                updateUI();
-                fetch(`${BACKEND_URL}/api/user/click`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, clicksCount: 1 }) });
-            };
 
-            function sendBuyCard(cardId) {
-                fetch(`${BACKEND_URL}/api/user/buy-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) })
-                .then(res => res.json()).then(data => { if (data.success) { userData = data.user; saveStateLocally(); updateUI(); } });
-            }
-            document.getElementById('buy-ceo-card').onclick = () => sendBuyCard('ceo_card');
-            document.getElementById('buy-marketing-card').onclick = () => sendBuyCard('marketing_card');
-            document.getElementById('buy-crypto-card').onclick = () => sendBuyCard('crypto_card');
+        // КЛИК ПО ПЧЕЛЕ (Прямой вызов)
+        document.getElementById('honey-bee-tap').onclick = function() {
+            const power = userData.multitapLevel || 1;
+            if (userData.energy < power) return;
+            userData.energy -= power; userData.balance += power; userData.totalEarned += power; updateUI(); saveStateLocally();
+            fetch(`${BACKEND_URL}/api/user/click`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, clicksCount: 1 }) });
+        };
 
-            function sendUpgrade(type) {
-                const cost = type === 'multitap' ? userData.multitapLevel * 200 : userData.offlineMiningLevel * 500;
-                fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: Number(cost) }) })
-                .then(res => res.json()).then(data => { if (data.success) { userData = data.user; saveStateLocally(); updateUI(); } });
-            }
-            document.getElementById('boost-multitap').onclick = () => sendUpgrade('multitap');
-            document.getElementById('boost-offline').onclick = () => sendUpgrade('offline');
+        // ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ ОБРАБОТКИ ОНКЛИКОВ ИЗ HTML ГАРАНТИРУЮТ СРАБАТЫВАНИЕ
+        window.executeBuyCard = function(cardId) {
+            fetch(`${BACKEND_URL}/api/user/buy-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) })
+            .then(res => res.json()).then(data => { if (data.success) { userData = data.user; saveStateLocally(); updateUI(); } });
+        };
 
-            document.getElementById('boost-energy').onclick = function() {
-                const boostVal = (userData.level || 1) * 300;
-                let targetEnergy = userData.energy + boostVal;
-                if (targetEnergy > 1000) targetEnergy = 1000;
-                userData.energy = targetEnergy; saveStateLocally(); updateUI();
-                fetch(`${BACKEND_URL}/api/user/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, username }) });
-            };
+        window.executeUpgrade = function(type) {
+            const cost = type === 'multitap' ? userData.multitapLevel * 200 : userData.offlineMiningLevel * 500;
+            fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: Number(cost) }) })
+            .then(res => res.json()).then(data => { if (data.success) { userData = data.user; saveStateLocally(); updateUI(); } });
+        };
 
-            document.getElementById('custom-ton-btn').onclick = function() {
-                if (window.tonConnectUIInstance) { window.tonConnectUIInstance.openModal().catch(err => console.error(err)); }
-            };
-            
-            document.getElementById('invite-btn').onclick = function() {
-                const refLink = `https://t.me/richmining_bot/`; // Сюда юзернейм твоего бота
-                navigator.clipboard.writeText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
-            };
-        });
+        window.executeEnergyBoost = function() {
+            const boostVal = (userData.level || 1) * 300;
+            let targetEnergy = userData.energy + boostVal;
+            if (targetEnergy > 1000) targetEnergy = 1000;
+            userData.energy = targetEnergy; updateUI(); saveStateLocally();
+            fetch(`${BACKEND_URL}/api/user/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, username }) });
+        };
 
-        // ПРИНУДИТЕЛЬНОЕ СОХРАНЕНИЕ ПРИ ПОЛНОМ ЗАКРЫТИИ ПРИЛОЖЕНИЯ НА СМАРТФОНЕ
+        window.openTonModal = function() {
+            if (window.tonConnectUIInstance) { window.tonConnectUIInstance.openModal().catch(err => console.error(err)); }
+        };
+
+        window.copyRefLink = function() {
+            const refLink = `https://t.me/richmining_bot/`;
+            navigator.clipboard.writeText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
+        };
+
         window.addEventListener('beforeunload', saveStateLocally);
         window.addEventListener('pagehide', saveStateLocally);
-        if (tg) { tg.onEvent('viewportChanged', saveStateLocally); }
 
-        // ЖЕСТКИЙ ФИКС ПРОСТРАНСТВА ИМЕН TON SDK ДЛЯ ВЕРСИИ @tonconnect/ui 2.x+
+        // Инициализация TON SDK
         const sdkNamespace = window.TonConnectSDK ? window.TonConnectSDK : window.TON_CONNECT_UI;
-        
         if (sdkNamespace && sdkNamespace.TonConnectUI) {
             window.tonConnectUIInstance = new sdkNamespace.TonConnectUI({
                 manifestUrl: "https://ds3343366-hue.github.io/clicker-frontend/"
             });
-
-            window.tonConnectUIInstance.uiOptions = { theme: 'DARK', style: { borderRadius: '12px' } };
-
+            window.tonConnectUIInstance.uiOptions = { theme: 'DARK' };
             window.tonConnectUIInstance.onStatusChange(wallet => {
                 const statusDiv = document.getElementById('wallet-status');
                 const customBtn = document.getElementById('custom-ton-btn');
@@ -449,20 +428,14 @@
                     statusDiv.innerText = `Подключен: ${wallet.account.address.slice(0,6)}...${wallet.account.address.slice(-4)} ✅`;
                     statusDiv.style.color = '#00ff00'; customBtn.innerText = "💎 Кошелек Привязан";
                     fetch(`${BACKEND_URL}/api/user/save-wallet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, walletAddress: wallet.account.address }) });
-                } else {
-                    statusDiv.innerText = "Кошелек не подключен ❌"; statusDiv.style.color = '#ff5555'; customBtn.innerText = "💎 Подключить Кошелек";
                 }
             });
         }
 
-        // Секундный цикл майнинга (Начисляет пассивный доход на экране и делает бэкап в память устройства)
+        // Секундный таймер
         setInterval(() => {
             if (userData && userData.profitPerHour > 0) {
-                const profitPerSecond = userData.profitPerHour / 3600;
-                userData.balance += profitPerSecond;
-                userData.totalEarned += profitPerSecond;
-                
-                if (Math.floor(userData.balance) % 10 === 0) { saveStateLocally(); }
+                userData.balance += (userData.profitPerHour / 3600);
                 document.getElementById('user-balance').innerText = Math.floor(userData.balance);
             }
         }, 1000);
@@ -473,3 +446,4 @@
 </body>
 </html>
 
+    
