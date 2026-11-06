@@ -205,7 +205,8 @@
             </div>
             <div class="energy-bar">⚡ <span id="current-energy">1000</span> / <span id="max-energy">1000</span></div>
         </div>
-                <!-- ВКЛАДКА 2: СОТЫ -->
+
+        <!-- ВКЛАДКА 2: СОТЫ -->
         <div id="tab-cards" class="tab-content">
             <h3>Развитие Бизнес-Сот 📊</h3>
             <div class="card" style="flex-direction: column; align-items: flex-start;">
@@ -287,7 +288,9 @@
         const telegramId = tg?.initDataUnsafe?.user?.id?.toString() || "123456789";
         const username = tg?.initDataUnsafe?.user?.username || "Test_Bee";
         
-        let userData = {
+        // СИСТЕМА СОХРАНЕНИЯ ОФЛАЙНА: Восстановление локального кэша, чтобы данные не обнулялись
+        const cachedState = localStorage.getItem(`bee_user_state_${telegramId}`);
+        let userData = cachedState ? JSON.parse(cachedState) : {
             balance: 0, totalEarned: 0, level: 1, profitPerHour: 0, energy: 1000, maxEnergy: 1000,
             multitapLevel: 1, offlineMiningLevel: 1, purchasedCards: [], referrals: [], todayCombo: []
         };
@@ -310,6 +313,11 @@
             navElement.classList.add('active');
         }
 
+        // Запись состояния игры в долговременную локальную память смартфона
+        function saveStateLocally() {
+            localStorage.setItem(`bee_user_state_${telegramId}`, JSON.stringify(userData));
+        }
+
         function syncUserData() {
             fetch(`${BACKEND_URL}/api/user/sync`, {
                 method: 'POST',
@@ -317,8 +325,14 @@
                 body: JSON.stringify({ telegramId, username })
             })
             .then(res => res.json())
-            .then(data => { if (data.success && data.user) { userData = data.user; updateUI(); } })
-            .catch(err => console.error("Сервер недоступен:", err));
+            .then(data => { 
+                if (data.success && data.user) { 
+                    userData = data.user; 
+                    saveStateLocally();
+                    updateUI(); 
+                } 
+            })
+            .catch(err => console.error("Сервер офлайн, играем на локальном кэше памяти", err));
         }
 
         function updateUI() {
@@ -368,19 +382,20 @@
             document.getElementById('buy-marketing-card').innerText = `💰 ${Math.floor(500 * Math.pow(1.5, cMkt ? cMkt.level : 0))}`;
             document.getElementById('buy-crypto-card').innerText = `💰 ${Math.floor(2000 * Math.pow(1.5, cCry ? cCry.level : 0))}`;
         }
-
-        // ГЛОБАЛЬНАЯ РЕГИСТРАЦИЯ ОБРАБОТЧИКОВ (ИСПРАВЛЕНИЕ ДЛЯ TELEGRAM И RENDER)
+                // ГЛОБАЛЬНОЕ ДЕЛЕГИРОВАНИЕ КЛИКОВ (ОБХОД ПЕСОЧНИЦЫ TELEGRAM MINI APPS)
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('honey-bee-tap').onclick = function() {
                 const power = userData.multitapLevel || 1;
                 if (userData.energy < power) return;
-                userData.energy -= power; userData.balance += power; userData.totalEarned += power; updateUI();
+                userData.energy -= power; userData.balance += power; userData.totalEarned += power; 
+                saveStateLocally();
+                updateUI();
                 fetch(`${BACKEND_URL}/api/user/click`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, clicksCount: 1 }) });
             };
 
             function sendBuyCard(cardId) {
                 fetch(`${BACKEND_URL}/api/user/buy-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) })
-                .then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } });
+                .then(res => res.json()).then(data => { if (data.success) { userData = data.user; saveStateLocally(); updateUI(); } });
             }
             document.getElementById('buy-ceo-card').onclick = () => sendBuyCard('ceo_card');
             document.getElementById('buy-marketing-card').onclick = () => sendBuyCard('marketing_card');
@@ -389,7 +404,7 @@
             function sendUpgrade(type) {
                 const cost = type === 'multitap' ? userData.multitapLevel * 200 : userData.offlineMiningLevel * 500;
                 fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: Number(cost) }) })
-                .then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } });
+                .then(res => res.json()).then(data => { if (data.success) { userData = data.user; saveStateLocally(); updateUI(); } });
             }
             document.getElementById('boost-multitap').onclick = () => sendUpgrade('multitap');
             document.getElementById('boost-offline').onclick = () => sendUpgrade('offline');
@@ -398,42 +413,66 @@
                 const boostVal = (userData.level || 1) * 300;
                 let targetEnergy = userData.energy + boostVal;
                 if (targetEnergy > 1000) targetEnergy = 1000;
-                userData.energy = targetEnergy; updateUI();
+                userData.energy = targetEnergy; saveStateLocally(); updateUI();
                 fetch(`${BACKEND_URL}/api/user/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, username }) });
             };
 
             document.getElementById('custom-ton-btn').onclick = function() {
-                if (typeof tonConnectUI !== 'undefined') { tonConnectUI.openModal().catch(err => console.error(err)); }
+                if (window.tonConnectUIInstance) { window.tonConnectUIInstance.openModal().catch(err => console.error(err)); }
+            };
+            
+            document.getElementById('invite-btn').onclick = function() {
+                const refLink = `https://t.me/richmining_bot/`; // Укажи юзернейм своего бота
+                navigator.clipboard.withText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
             };
         });
 
-        function copyRefLink() {
-            const refLink = `https://t.me/richmining_bot/`; // Укажи юзернейм своего бота
-            navigator.clipboard.writeText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
+        // СИСТЕМА ЖЕСТКОЙ ФИКСАЦИИ ПРИ ПОЛНОМ ЗАКРЫТИИ ИЛИ СВЕРТЫВАНИИ
+        window.addEventListener('beforeunload', saveStateLocally);
+        window.addEventListener('pagehide', saveStateLocally);
+        if (tg) { tg.onEvent('viewportChanged', saveStateLocally); }
+
+        // ИСПРАВЛЕНИЕ ПРОСТРАНСТВА ИМЕН TON SDK ДЛЯ ВЕРСИИ @tonconnect/ui 2.x
+        const sdkNamespace = window.TonConnectSDK ? window.TonConnectSDK : window.TON_CONNECT_UI;
+        
+        if (sdkNamespace && sdkNamespace.TonConnectUI) {
+            window.tonConnectUIInstance = new sdkNamespace.TonConnectUI({
+                manifestUrl: "https://ds3343366-hue.github.io/clicker-frontend/"
+            });
+
+            window.tonConnectUIInstance.uiOptions = { theme: 'DARK', style: { borderRadius: '12px' } };
+
+            window.tonConnectUIInstance.onStatusChange(wallet => {
+                const statusDiv = document.getElementById('wallet-status');
+                const customBtn = document.getElementById('custom-ton-btn');
+                if (wallet) {
+                    statusDiv.innerText = `Подключен: ${wallet.account.address.slice(0,6)}...${wallet.account.address.slice(-4)} ✅`;
+                    statusDiv.style.color = '#00ff00'; customBtn.innerText = "💎 Кошелек Привязан";
+                    fetch(`${BACKEND_URL}/api/user/save-wallet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, walletAddress: wallet.account.address }) });
+                } else {
+                    statusDiv.innerText = "Кошелек не подключен ❌"; statusDiv.style.color = '#ff5555'; customBtn.innerText = "💎 Подключить Кошелек";
+                }
+            });
         }
 
-        // ЖЕСТКИЙ ФИКС URL МАНИФЕСТА TON CONNECT
-        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: "https://ds3343366-hue.github.io/clicker-frontend/"
-        });
-
-        tonConnectUI.onStatusChange(wallet => {
-            const statusDiv = document.getElementById('wallet-status');
-            const customBtn = document.getElementById('custom-ton-btn');
-            if (wallet) {
-                statusDiv.innerText = `Подключен: ${wallet.account.address.slice(0,6)}...${wallet.account.address.slice(-4)} ✅`;
-                statusDiv.style.color = '#00ff00'; customBtn.innerText = "💎 Кошелек Привязан";
-                fetch(`${BACKEND_URL}/api/user/save-wallet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, walletAddress: wallet.account.address }) });
-            } else {
-                statusDiv.innerText = "Кошелек не подключен ❌"; statusDiv.style.color = '#ff5555'; customBtn.innerText = "💎 Подключить Кошелек";
+        // Секундный цикл майнинга (Начисляет пассивный доход каждую секунду и бэкапит раз в 10 сек)
+        setInterval(() => {
+            if (userData && userData.profitPerHour > 0) {
+                const profitPerSecond = userData.profitPerHour / 3600;
+                userData.balance += profitPerSecond;
+                userData.totalEarned += profitPerSecond;
+                
+                if (Math.floor(userData.balance) % 10 === 0) { saveStateLocally(); }
+                document.getElementById('user-balance').innerText = Math.floor(userData.balance);
             }
-        });
+        }, 1000);
 
         updateUI();
         syncUserData();
     </script>
 </body>
 </html>
+
 
 
 
