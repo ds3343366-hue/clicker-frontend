@@ -278,7 +278,7 @@
             <button class="nav-item" onclick="openTab('tab-airdrop', this)">💎<br>AirDrop</button>
         </div>
     </div>
-        <script>
+    <script>
         // === ВНИМАНИЕ: УКАЖИТЕ ВАШ РЕАЛЬНЫЙ URL ИЗ RENDER ВМЕСТО ЗАГЛУШКИ ===
         const BACKEND_URL = "https://aaaclickerbackend.onrender.com/"; 
 
@@ -288,7 +288,7 @@
         const telegramId = tg?.initDataUnsafe?.user?.id?.toString() || "123456789";
         const username = tg?.initDataUnsafe?.user?.username || "Test_Bee";
         
-        // СИСТЕМА СОХРАНЕНИЯ ОФЛАЙНА: Восстановление локального кэша, чтобы данные не обнулялись
+        // СИСТЕМА АВТОСОХРАНЕНИЯ: Мгновенное восстановление кэша при перезагрузке
         const cachedState = localStorage.getItem(`bee_user_state_${telegramId}`);
         let userData = cachedState ? JSON.parse(cachedState) : {
             balance: 0, totalEarned: 0, level: 1, profitPerHour: 0, energy: 1000, maxEnergy: 1000,
@@ -313,7 +313,7 @@
             navElement.classList.add('active');
         }
 
-        // Запись состояния игры в долговременную локальную память смартфона
+        // Запись состояния во внутреннюю долговременную память смартфона (Anti-Reset)
         function saveStateLocally() {
             localStorage.setItem(`bee_user_state_${telegramId}`, JSON.stringify(userData));
         }
@@ -332,7 +332,7 @@
                     updateUI(); 
                 } 
             })
-            .catch(err => console.error("Сервер офлайн, играем на локальном кэше памяти", err));
+            .catch(err => console.error("Бэкенд недоступен, работаем на локальной памяти", err));
         }
 
         function updateUI() {
@@ -382,7 +382,7 @@
             document.getElementById('buy-marketing-card').innerText = `💰 ${Math.floor(500 * Math.pow(1.5, cMkt ? cMkt.level : 0))}`;
             document.getElementById('buy-crypto-card').innerText = `💰 ${Math.floor(2000 * Math.pow(1.5, cCry ? cCry.level : 0))}`;
         }
-                // ГЛОБАЛЬНОЕ ДЕЛЕГИРОВАНИЕ КЛИКОВ (ОБХОД ПЕСОЧНИЦЫ TELEGRAM MINI APPS)
+        // БЕЗОПАСНАЯ РЕГИСТРАЦИЯ КЛИКОВ (ОБХОД ПЕСОЧНИЦЫ TELEGRAM MINI APPS)
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('honey-bee-tap').onclick = function() {
                 const power = userData.multitapLevel || 1;
@@ -422,17 +422,17 @@
             };
             
             document.getElementById('invite-btn').onclick = function() {
-                const refLink = `https://t.me/richmining_bot/`; // Укажи юзернейм своего бота
-                navigator.clipboard.withText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
+                const refLink = `https://t.me/richmining_bot/`; // Сюда юзернейм твоего бота
+                navigator.clipboard.writeText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
             };
         });
 
-        // СИСТЕМА ЖЕСТКОЙ ФИКСАЦИИ ПРИ ПОЛНОМ ЗАКРЫТИИ ИЛИ СВЕРТЫВАНИИ
+        // ПРИНУДИТЕЛЬНОЕ СОХРАНЕНИЕ ПРИ ПОЛНОМ ЗАКРЫТИИ ПРИЛОЖЕНИЯ НА СМАРТФОНЕ
         window.addEventListener('beforeunload', saveStateLocally);
         window.addEventListener('pagehide', saveStateLocally);
         if (tg) { tg.onEvent('viewportChanged', saveStateLocally); }
 
-        // ИСПРАВЛЕНИЕ ПРОСТРАНСТВА ИМЕН TON SDK ДЛЯ ВЕРСИИ @tonconnect/ui 2.x
+        // ЖЕСТКИЙ ФИКС ПРОСТРАНСТВА ИМЕН TON SDK ДЛЯ ВЕРСИИ @tonconnect/ui 2.x+
         const sdkNamespace = window.TonConnectSDK ? window.TonConnectSDK : window.TON_CONNECT_UI;
         
         if (sdkNamespace && sdkNamespace.TonConnectUI) {
@@ -455,7 +455,7 @@
             });
         }
 
-        // Секундный цикл майнинга (Начисляет пассивный доход каждую секунду и бэкапит раз в 10 сек)
+        // Секундный цикл майнинга (Начисляет пассивный доход на экране и делает бэкап в память устройства)
         setInterval(() => {
             if (userData && userData.profitPerHour > 0) {
                 const profitPerSecond = userData.profitPerHour / 3600;
@@ -472,7 +472,4 @@
     </script>
 </body>
 </html>
-
-
-
 
