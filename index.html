@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bee GameFi Hive Clicker</title>
     
-    <!-- Подключаем скрипты SDK (Telegram и TON Connect) -->
+    <!-- Подключаем SDK -->
     <script src="https://telegram.org"></script>
     <script src="https://unpkg.com"></script>
 
@@ -18,7 +18,7 @@
             --neon-glow: #ffb700;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background-color: var(--bg-color);
             background-image: radial-gradient(circle at center, #3d240f 0%, #1e1105 100%);
             color: var(--text-color);
@@ -43,7 +43,6 @@
             border-radius: 14px;
             font-size: 14px;
             font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             border: 1px solid #4a2f14;
         }
         .balance-container {
@@ -68,14 +67,13 @@
             border-radius: 10px;
             border: 1px solid #4a2f14;
             overflow: hidden;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
         }
         .progress-bar {
             width: 0%;
             height: 100%;
             background: #ff3333; 
             border-radius: 10px;
-            transition: width 0.3s ease, background-color 0.3s ease;
+            transition: width 0.3s ease;
         }
         .progress-text {
             font-size: 11px;
@@ -98,19 +96,14 @@
             justify-content: center;
             align-items: center;
             box-shadow: 0 0 25px var(--neon-glow), inset 0 0 15px rgba(255,255,255,0.4);
-            transition: transform 0.05s ease;
             cursor: pointer;
             border: 4px solid #ffd269;
-        }
-        .click-circle:active {
-            transform: scale(0.92);
         }
         .click-circle button {
             font-size: 95px;
             background: none;
             border: none;
             outline: none;
-            cursor: pointer;
             pointer-events: none;
         }
         .energy-bar {
@@ -152,17 +145,19 @@
             border: 1px solid #ffda73;
         }
         
-        /* Жесткая стилизация контейнера TON Connect под красивую синюю кнопку */
-        #ton-connect-button {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-        }
-        #ton-connect-button div, #ton-connect-button button {
-            background-color: #0098ea !important;
+        /* КРАСИВАЯ GAMEFI КНОПКА ТОН КОШЕЛЬКА */
+        .ton-custom-btn {
+            background: linear-gradient(135deg, #0098ea, #005c9e) !important;
             color: #ffffff !important;
             border-radius: 12px !important;
             font-weight: bold !important;
+            padding: 14px 28px !important;
+            box-shadow: 0 0 15px rgba(0, 152, 234, 0.5) !important;
+            border: 1px solid #5cc1ff !important;
+            font-size: 15px;
+            cursor: pointer;
+            width: 80%;
+            margin: 10px auto;
         }
 
         .navigation {
@@ -276,10 +271,10 @@
             <h3>Программа AirDrop 💎</h3>
             <div class="card" style="flex-direction: column; text-align: center; gap: 15px; padding: 25px 15px;">
                 <strong>Привязка TON Кошелька</strong>
-                <p style="font-size: 13px; color:#c7af99; margin: 0;">Подключи свой кошелек для фиксации участия в AirDrop.</p>
+                <p style="font-size: 13px; color:#c7af99; margin: 0;">Подключи свой TON кошелек для фиксации участия в AirDrop.</p>
                 
-                <!-- Контейнер TON Connect -->
-                <div id="ton-connect-button"></div>
+                <!-- НАДЕЖНАЯ КАСТОМНАЯ СИНЯЯ КНОПКА ВМЕСТО ШАДОУ ДОМА -->
+                <button class="ton-custom-btn" id="custom-ton-btn" onclick="openTonModal()">💎 Подключить Кошелек</button>
                 
                 <div id="wallet-status" style="font-size: 13px; color: #ff5555; font-weight:bold;">Кошелек не подключен ❌</div>
             </div>
@@ -294,7 +289,7 @@
         </div>
     </div>
         <script>
-        // === ЗАМЕНИТЕ НА ВАШ АКТУАЛЬНЫЙ АДРЕС ИЗ СЕРВЕРА RENDER ===
+        // === ВНИМАНИЕ: УКАЖИ ТУТ СВОЮ РЕАЛЬНУЮ ССЫЛКУ ИЗ СЕРВЕРА RENDER ===
         const BACKEND_URL = "https://aaaclickerbackend.onrender.com/"; 
 
         const tg = window.Telegram?.WebApp;
@@ -302,7 +297,12 @@
 
         const telegramId = tg?.initDataUnsafe?.user?.id?.toString() || "123456789";
         const username = tg?.initDataUnsafe?.user?.username || "Test_Bee";
-        let userData = null;
+        
+        // Предотвращаем падение JS: Задаем дефолтные безопасные данные до ответа сервера
+        let userData = {
+            balance: 0, totalEarned: 0, level: 1, profitPerHour: 0, energy: 1000, maxEnergy: 1000,
+            multitapLevel: 1, offlineMiningLevel: 1, purchasedCards: [], referrals: [], todayCombo: []
+        };
 
         const MAX_LEVELS = 30;
         const BACKEND_LEVELS = Array.from({length: MAX_LEVELS}, (_, i) => Math.floor(5000 * Math.pow(1.22, i)));
@@ -331,16 +331,17 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
+                if (data.success && data.user) {
                     userData = data.user;
                     updateUI();
                 }
-            }).catch(err => console.error(err));
+            }).catch(err => console.error("Бэкенд спит или недоступен:", err));
         }
 
         function updateUI() {
             if (!userData) return;
-
+            
+            // Динамический рендеринг данных в интерфейс
             document.getElementById('user-balance').innerText = Math.floor(userData.balance);
             document.getElementById('current-energy').innerText = userData.energy;
             document.getElementById('max-energy').innerText = userData.maxEnergy;
@@ -360,36 +361,33 @@
             const levelRange = nextLevelTarget - prevLevelTarget;
             
             let percent = Math.floor((levelProgress / levelRange) * 100);
-            if (percent < 0) percent = 0;
-            if (percent > 100) percent = 100;
+            if (percent < 0) percent = 0; if (percent > 100) percent = 100;
 
             const progressBar = document.getElementById('level-progress-bar');
-            progressBar.style.width = percent + "%";
-
-            if (percent < 50) {
-                progressBar.style.backgroundColor = `rgb(255, ${Math.floor(percent * 5.1)}, 51)`;
-            } else {
-                progressBar.style.backgroundColor = `rgb(${Math.floor(255 - (percent - 50) * 5.1)}, 255, 51)`;
+            if (progressBar) {
+                progressBar.style.width = percent + "%";
+                if (percent < 50) {
+                    progressBar.style.backgroundColor = `rgb(255, ${Math.floor(percent * 5.1)}, 51)`;
+                } else {
+                    progressBar.style.backgroundColor = `rgb(${Math.floor(255 - (percent - 50) * 5.1)}, 255, 51)`;
+                }
             }
 
             const remainder = nextLevelTarget - totalEarned;
             document.getElementById('level-progress-text').innerText = remainder > 0 
-                ? `До следующего уровня: ${Math.floor(remainder)} 🍯` 
-                : `Максимальный ранг достигнут!`;
+                ? `До следующего уровня: ${Math.floor(remainder)} 🍯` : `Максимальный ранг!`;
 
             const info = getSkinAndRank(currentLevel);
             document.getElementById('user-rank').innerText = `Ранг: ${info.rank} (${currentLevel}/30)`;
             document.getElementById('bee-avatar').innerText = info.skin;
 
-            const calculatedEnergyBoost = currentLevel * 300;
-            document.getElementById('energy-boost-val').innerText = calculatedEnergyBoost;
-
+            document.getElementById('energy-boost-val').innerText = currentLevel * 300;
             document.getElementById('boost-multitap').innerText = `💰 ${userData.multitapLevel * 200}`;
             document.getElementById('boost-offline').innerText = `💰 ${userData.offlineMiningLevel * 500}`;
             
-            const cCeo = userData.purchasedCards.find(c => c.cardId === 'ceo_card');
-            const cMkt = userData.purchasedCards.find(c => c.cardId === 'marketing_card');
-            const cCry = userData.purchasedCards.find(c => c.cardId === 'crypto_card');
+            const cCeo = userData.purchasedCards?.find(c => c.cardId === 'ceo_card');
+            const cMkt = userData.purchasedCards?.find(c => c.cardId === 'marketing_card');
+            const cCry = userData.purchasedCards?.find(c => c.cardId === 'crypto_card');
 
             document.getElementById('lvl-ceo').innerText = cCeo ? cCeo.level : 0;
             document.getElementById('lvl-marketing').innerText = cMkt ? cMkt.level : 0;
@@ -399,78 +397,125 @@
             document.getElementById('buy-marketing-card').innerText = `💰 ${Math.floor(500 * Math.pow(1.5, cMkt ? cMkt.level : 0))}`;
             document.getElementById('buy-crypto-card').innerText = `💰 ${Math.floor(2000 * Math.pow(1.5, cCry ? cCry.level : 0))}`;
         }
+                // БЕЗОПАСНЫЙ СВЯЗУЮЩИЙ УЗЕЛ: Ждем полную сборку HTML-дерева страницы перед вешанием кликов
+        window.addEventListener('DOMContentLoaded', () => {
+            
+            // Логика клика по пчеле
+            document.getElementById('honey-bee-tap').addEventListener('click', () => {
+                const power = userData.multitapLevel || 1;
+                if (userData.energy < power) return;
 
-        // ЖЕСТКИЙ ФИКС МАЙНИНГА: Вызов функций прямо из инлайн-атрибутов HTML
-        function executeBuyCard(cardId) {
-            fetch(`${BACKEND_URL}/api/user/buy-card`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ telegramId, cardId })
-            }).then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } else { alert(data.error); } });
-        }
+                userData.energy -= power;
+                userData.balance += power;
+                userData.totalEarned += power;
+                updateUI();
 
-        function executeUpgrade(type) {
-            const cost = type === 'multitap' ? userData.multitapLevel * 200 : userData.offlineMiningLevel * 500;
-            fetch(`${BACKEND_URL}/api/user/upgrade-stat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ telegramId, type, cost })
-            }).then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } });
-        }
+                fetch(`${BACKEND_URL}/api/user/click`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId, clicksCount: 1 })
+                }).then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } });
+            });
 
-        function executeEnergyBoost() {
-            if (!userData) return;
-            const boostVal = (userData.level || 1) * 300;
-            let targetEnergy = userData.energy + boostVal;
-            if (targetEnergy > 1000) targetEnergy = 1000;
-            userData.energy = targetEnergy;
-            updateUI();
-            fetch(`${BACKEND_URL}/api/user/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, username }) });
-        }
+            // Нажатия на кнопки майнинга (Соты)
+            document.getElementById('buy-ceo-card').addEventListener('click', () => {
+                fetch(`${BACKEND_URL}/api/user/buy-card`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId, cardId: "ceo_card" })
+                }).then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } });
+            });
 
-        document.getElementById('honey-bee-tap').onclick = function() {
-            if (!userData) return;
-            const power = userData.multitapLevel;
-            if (userData.energy < power) return;
-            userData.energy -= power; userData.balance += power; userData.totalEarned += power; updateUI();
-            fetch(`${BACKEND_URL}/api/user/click`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, clicksCount: 1 }) });
-        };
+            document.getElementById('buy-marketing-card').addEventListener('click', () => {
+                fetch(`${BACKEND_URL}/api/user/buy-card`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId, cardId: "marketing_card" })
+                }).then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } });
+            });
+
+            document.getElementById('buy-crypto-card').addEventListener('click', () => {
+                fetch(`${BACKEND_URL}/api/user/buy-card`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId, cardId: "crypto_card" })
+                }).then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } });
+            });
+
+            // Нажатия на кнопки Бустов (Мульти-тап и Офлайн)
+            document.getElementById('boost-multitap').addEventListener('click', () => {
+                const cost = Number(userData.multitapLevel * 200);
+                fetch(`${BACKEND_URL}/api/user/upgrade-stat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId, type: 'multitap', cost: cost })
+                }).then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } else { alert(data.error); } });
+            });
+
+            document.getElementById('boost-offline').addEventListener('click', () => {
+                const cost = Number(userData.offlineMiningLevel * 500);
+                fetch(`${BACKEND_URL}/api/user/upgrade-stat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId, type: 'offline', cost: cost })
+                }).then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } else { alert(data.error); } });
+            });
+
+            // Нажатие на фиксированный буст энергии до 1000 лимита
+            document.getElementById('boost-energy').addEventListener('click', () => {
+                fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ telegramId, type: 'energy', cost: 150 }) 
+                }).then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); } });
+            });
+
+            // Кнопка принудительного открытия официальной синей модалки кошельков TON
+            document.getElementById('custom-ton-btn').addEventListener('click', () => {
+                if (typeof tonConnectUI !== 'undefined') {
+                    tonConnectUI.openModal().catch(err => alert("Ошибка вызова шлюза TON: " + err));
+                } else {
+                    alert("Библиотека TON Connect еще не загружена.");
+                }
+            });
+        });
 
         function copyRefLink() {
-            const refLink = `https://t.me/richmining_bot/`;
+            const refLink = `https://t.me/richmining_bot/`; // Укажи юзернейм своего бота
             navigator.clipboard.writeText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
         }
 
-        // ЖЕСТКИЙ ФИКС TON CONNECT: Инициализация синей кнопки через объект опций SDK
-        const currentPath = window.location.origin + window.location.pathname;
-        const correctManifestUrl = currentPath.endsWith('index.html') ? currentPath.replace('index.html', 'tonconnect-manifest.json') : (currentPath.endsWith('/') ? currentPath + 'tonconnect-manifest.json' : currentPath + '/tonconnect-manifest.json');
-
+        // === ИСПРАВЛЕННЫЙ И СТИЛИЗИРОВАННЫЙ TON CONNECT UI ===
+        const staticManifestUrl = "https://myjson.online/app/records/19e9ce03-e668-41ac-90fe-d25f6de3aead";
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: correctManifestUrl,
-            buttonRootId: 'ton-connect-button'
+            manifestUrl: staticManifestUrl
         });
-
-        // Настройка стилей для появления синей кнопки кошелька
-        tonConnectUI.uiOptions = {
-            theme: 'DARK',
-            style: { borderRadius: '12px' }
-        };
 
         tonConnectUI.onStatusChange(wallet => {
             const statusDiv = document.getElementById('wallet-status');
+            const customBtn = document.getElementById('custom-ton-btn');
             if (wallet) {
                 statusDiv.innerText = `Подключен: ${wallet.account.address.slice(0,6)}...${wallet.account.address.slice(-4)} ✅`;
                 statusDiv.style.color = '#00ff00';
+                customBtn.innerText = "💎 Кошелек Привязан";
                 fetch(`${BACKEND_URL}/api/user/save-wallet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, walletAddress: wallet.account.address }) });
             } else {
                 statusDiv.innerText = "Кошелек не подключен ❌"; statusDiv.style.color = '#ff5555';
+                customBtn.innerText = "💎 Подключить Кошелек";
             }
         });
 
+        // Первичный рендеринг и запрос синхронизации
+        updateUI();
         syncUserData();
     </script>
 </body>
 </html>
+
+
+        
+
+        
 
 
 
