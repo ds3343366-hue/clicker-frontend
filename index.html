@@ -20,6 +20,10 @@
         .card { background: rgba(48, 29, 18, 0.6); border: 1px solid #523522; padding: 15px; margin: 14px auto; border-radius: 14px; max-width: 400px; text-align: left; box-shadow: 0 6px 12px rgba(0,0,0,0.4); backdrop-filter: blur(5px); }
         .combo-box { border: 2px dashed #e5a93b; background: rgba(229, 169, 59, 0.04); }
         
+        /* Трёхцветная неоновая геймфи лента прогресса */
+        .progress-container { width: 85%; max-width: 380px; height: 14px; background: #26160e; margin: 8px auto; border-radius: 10px; border: 1px solid #523522; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.6); position: relative; }
+        .progress-bar { height: 100%; width: 0%; border-radius: 10px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s ease; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        
         .bottom-menu { position: fixed; bottom: 0; left: 0; right: 0; background: #190e09; display: flex; justify-content: space-around; padding: 10px 0; border-top: 2px solid #b8860b; box-shadow: 0 -5px 15px rgba(0,0,0,0.6); z-index: 1000; }
         .bottom-menu button { background: none; border: none; color: #7a5c48; font-size: 11px; cursor: pointer; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: color 0.2s, transform 0.1s; width: 20%; }
         .bottom-menu button:active { transform: scale(0.95); }
@@ -47,6 +51,11 @@
         <div id="balance-view" style="font-size: 34px; font-weight: bold; color: #e5a93b; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">🍯 0</div>
         <div id="profit-view" style="font-size: 14px; color: #00ffcc; font-weight: bold; margin-top: 2px;">Пассив улья: +0/ч</div>
         <div id="level-view" style="margin-top: 5px; font-size: 15px; font-weight: bold; color: #fff;">Ранг: Личинка 🥚 (Уровень 1)</div>
+        
+        <!-- Новая интерактивная неоновая лента прохождения уровня -->
+        <div class="progress-container">
+            <div id="level-progress-bar" class="progress-bar"></div>
+        </div>
         <div id="next-level-info" style="font-size: 13px; color: #ffaa00; margin-top: 4px; font-weight: 500;">До следующего уровня: 5,000 🍯</div>
     </header>
     <!-- ЭКРАН 1: КЛИКЕР -->
@@ -148,8 +157,8 @@
     </footer>
 
     <script>
-        // ВАЖНО: Укажите здесь ваш реальный URL бэкенда на Render без лишних косых черт на конце
-        const BACKEND_URL = "https://aaaclickerbackend.onrender.com/";
+        const RAW_BACKEND_URL = "https://aaaclickerbackend.onrender.com";
+        const BACKEND_URL = RAW_BACKEND_URL.endsWith('/') ? RAW_BACKEND_URL.slice(0, -1) : RAW_BACKEND_URL;
 
         let gameState = {
             telegramId: "demo_user_123",
@@ -180,6 +189,7 @@
             marketing_card: { basePrice: 500 },
             crypto_card: { basePrice: 2000 }
         };
+
         function getBeeSkin(level) {
             if (level >= 26) return "queen_bee.png";  
             if (level >= 16) return "worker_bee.png"; 
@@ -187,21 +197,21 @@
             return "egg.png";                         
         }
 
-        // Чистый и безопасный метод отправки запросов без блокировок CORS
         async function request(endpoint, payload) {
+            const cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+            const fullUrl = `${BACKEND_URL}${cleanEndpoint}`;
             try {
-                const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+                const res = await fetch(fullUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                if (!res.ok) return { success: false };
                 return await res.json();
             } catch (err) {
-                console.error(`Ошибка при запросе к ${endpoint}:`, err);
                 return { success: false };
             }
         }
-
         async function initGame() {
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.ready();
@@ -220,12 +230,11 @@
                 gameState.totalEarned = parsed.totalEarned || 0;
             }
 
-            // Вызываем синхронизацию для создания/получения профиля
             const data = await request('/api/user/sync', {
                 telegramId: gameState.telegramId,
                 username: gameState.username,
-                localBalance: gameState.balance,
-                localTotalEarned: gameState.totalEarned
+                localBalance: Number(gameState.balance),
+                localTotalEarned: Number(gameState.totalEarned)
             });
 
             if (data && data.success) {
@@ -253,7 +262,10 @@
 
                 clearTimeout(clickTimeout);
                 clickTimeout = setTimeout(async () => {
-                    const data = await request('/api/user/click', { telegramId: gameState.telegramId, clicksCount: clickQueue });
+                    const data = await request('/api/user/click', { 
+                        telegramId: gameState.telegramId, 
+                        clicksCount: Number(clickQueue) 
+                    });
                     if (data && data.success) {
                         gameState.balance = data.user.balance;
                         gameState.totalEarned = data.user.totalEarned;
@@ -265,58 +277,45 @@
                 }, 500);
             }
         }
+
         async function buyUpgrade(type) {
             if (gameState.level >= 30) return; 
             let currentLvl = type === 'multitap' ? gameState.multitapLevel : (type === 'energy' ? gameState.energyLimitLevel : gameState.offlineMiningLevel);
             let cost = Math.floor(UPGRADE_PRICES[type].base * Math.pow(UPGRADE_PRICES[type].step, currentLvl - 1));
             if (gameState.balance < cost) return alert("Недостаточно мёда! 🍯");
             
-            // Фикс: Посылаем валидные типы на бэкенд
             const data = await request('/api/user/upgrade-stat', { telegramId: gameState.telegramId, type, cost: Number(cost) });
             if (data && data.success) { gameState = data.user; updateUI(); saveLocal(); }
             else { alert("Сбой синхронизации буста с сервером"); }
         }
-
         async function buyCard(cardId) {
-    if (gameState.level >= 30) return; 
-    const card = gameState.purchasedCards.find(c => c.cardId === cardId);
-    const currentLvl = card ? card.level : 0;
-    const cost = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLvl));
-    if (gameState.balance < cost) return alert("Недостаточно мёда в сотах!");
-    
-    // ИСПРАВЛЕНИЕ: Точный вызов эндпоинта /api/user/buy-card
-    const data = await request('/api/user/buy-card', { telegramId: gameState.telegramId, cardId: cardId });
-    
-    if (data && data.success) { 
-        gameState = data.user; 
-        updateUI(); 
-        saveLocal(); 
-        
-        // Автоматическая проверка комбо-награды дня
-        const comboData = await request('/api/user/check-combo', { telegramId: gameState.telegramId, cardId: cardId });
-        if (comboData && comboData.success && comboData.comboCompleted) {
-            alert("🎉 Вы угадали Ежедневное Комбо! Награда +250,000 🍯 зачислена!");
-            gameState = comboData.user;
-            updateUI();
+            if (gameState.level >= 30) return; 
+            const card = gameState.purchasedCards.find(c => c.cardId === cardId);
+            const currentLvl = card ? card.level : 0;
+            const cost = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLvl));
+            if (gameState.balance < cost) return alert("Недостаточно мёда в сотах!");
+            
+            const data = await request('/api/user/buy-card', { telegramId: gameState.telegramId, cardId });
+            if (data && data.success) { 
+                gameState = data.user; 
+                updateUI(); 
+                saveLocal(); 
+                
+                // Проверяем комбо дня
+                const comboData = await request('/api/user/check-combo', { telegramId: gameState.telegramId, cardId });
+                if (comboData && comboData.success && comboData.comboCompleted) {
+                    gameState = comboData.user;
+                    updateUI();
+                }
+            } else { alert("Не удалось обновить соту на сервере"); }
         }
-    } else { 
-        alert("Не удалось обновить соту на сервере. Попробуйте нажать кнопку 'Клик', чтобы синхронизировать профиль."); 
-    }
-}
 
         async function connectTonWallet() {
             document.getElementById("ton-connect-btn").innerText = "Авторизация...";
             setTimeout(async () => {
                 const mockAddress = "EQA_GAMEFI_BEE_" + Math.floor(100000 + Math.random() * 900000);
                 const data = await request('/api/user/save-wallet', { telegramId: gameState.telegramId, walletAddress: mockAddress });
-                if (data && data.success) { 
-                    gameState.walletAddress = data.user.walletAddress; 
-                    updateUI(); 
-                    alert("TON Кошелек успешно верифицирован! 💎"); 
-                } else {
-                    alert("Ошибка: не удалось связать кошелек. Нажмите 'Клик' один раз, чтобы создать профиль.");
-                    document.getElementById("ton-connect-btn").innerText = "💎 Подключить Кошелек";
-                }
+                if (data && data.success) { gameState.walletAddress = data.user.walletAddress; updateUI(); alert("TON Кошелек успешно верифицирован! 💎"); }
             }, 1200);
         }
 
@@ -327,8 +326,14 @@
 
         function updateUI() {
             document.getElementById("balance-view").innerText = `🍯 ${gameState.balance.toLocaleString()}`;
-            document.getElementById("profit-view").innerText = `Пассив улья: +${gameState.profitPerHour}/ч`;
+            
+            // Точное отображение пассивного дохода улья (Карточки сот + АСИК майнеры)
+            const asicProfit = (gameState.offlineMiningLevel - 1) * 50;
+            const totalPassive = gameState.profitPerHour + asicProfit;
+            document.getElementById("profit-view").innerText = `Пассив улья: +${totalPassive.toLocaleString()}/ч`;
+            
             document.getElementById("energy-view").innerText = `⚡ ${gameState.energy} / ${gameState.maxEnergy}`;
+            
             let rankName = "Личинка 🥚";
             if (gameState.level >= 6) rankName = "Молодая Пчела 🐝";
             if (gameState.level >= 16) rankName = "Рабочий Рой 💼";
@@ -337,22 +342,40 @@
             document.getElementById("bee-skin-img").src = `images/${getBeeSkin(gameState.level)}`;
 
             const nextLevelInfo = document.getElementById("next-level-info");
+            const progressBar = document.getElementById("level-progress-bar");
+            
+            // Расчет опыта до следующего уровня
+            const expNeeded = Math.floor(5000 * Math.pow(1.22, gameState.level - 1));
+            let progressPercent = Math.min(100, Math.floor((gameState.totalEarned / expNeeded) * 100)) || 0;
+
+            // Логика цвета трехцветной неоновой ленты (красный -> желтый -> зеленый)
+            let barColor = "linear-gradient(90deg, #ff3333, #ff5555)"; // Красный в начале
+            if (progressPercent >= 45 && progressPercent < 80) {
+                barColor = "linear-gradient(90deg, #ffcc00, #ffaa00)"; // Желтоватый в середине
+            } else if (progressPercent >= 80) {
+                barColor = "linear-gradient(90deg, #00ffcc, #00ff66)"; // Зеленый в конце
+            }
+            progressBar.style.width = `${progressPercent}%`;
+            progressBar.style.background = barColor;
+
+            // Скрытие надписи на 30 уровне
             if (gameState.level >= 30) {
                 nextLevelInfo.style.display = "none";
+                progressBar.style.width = "100%";
+                progressBar.style.background = "linear-gradient(90deg, #00ffcc, #00ff66)";
                 document.querySelectorAll(".upgrade-btn").forEach(btn => btn.disabled = true);
                 document.getElementById("combo-status").innerText = "Статус: Достигнут лимит 30-го уровня!";
             } else {
                 nextLevelInfo.style.display = "block";
-                const expNeeded = Math.floor(5000 * Math.pow(1.22, gameState.level - 1));
-                nextLevelInfo.innerText = `До следующего уровня: ${(expNeeded - gameState.totalEarned) > 0 ? (expNeeded - gameState.totalEarned).toLocaleString() : 0} 🍯`;
+                const leftToUp = expNeeded - gameState.totalEarned;
+                nextLevelInfo.innerText = `До следующего уровня осталось: ${(leftToUp > 0 ? leftToUp : 0).toLocaleString()} 🍯`;
                 
                 document.getElementById("lvl-multitap").innerText = gameState.multitapLevel;
                 document.getElementById("price-multitap").innerText = Math.floor(UPGRADE_PRICES.multitap.base * Math.pow(UPGRADE_PRICES.multitap.step, gameState.multitapLevel - 1));
                 document.getElementById("lvl-energy").innerText = gameState.energyLimitLevel;
                 document.getElementById("price-energy").innerText = Math.floor(UPGRADE_PRICES.energy.base * Math.pow(UPGRADE_PRICES.energy.step, gameState.energyLimitLevel - 1));
-                
                 document.getElementById("lvl-offline").innerText = gameState.offlineMiningLevel;
-                document.getElementById("profit-offline").innerText = (gameState.offlineMiningLevel - 1) * 50;
+                document.getElementById("profit-offline").innerText = (asicProfit + 50);
                 document.getElementById("price-offline").innerText = Math.floor(UPGRADE_PRICES.offline.base * Math.pow(UPGRADE_PRICES.offline.step, gameState.offlineMiningLevel - 1));
 
                 ['ceo_card', 'marketing_card', 'crypto_card'].forEach(cId => {
@@ -361,14 +384,28 @@
                     document.getElementById(`lvl-${cId}`).innerText = cLvl;
                     document.getElementById(`price-${cId}`).innerText = Math.floor(CARDS_CONFIG[cId].basePrice * Math.pow(1.5, cLvl));
                 });
-                const todayStr = new Date().toISOString().split('T');
-                if (gameState.lastComboDate === "COMPLETED_" + todayStr) { document.getElementById("combo-status").innerText = "Статус: Комбо дня собрано! ✅ (+250k)"; }
-                else { document.getElementById("combo-status").innerText = `Статус: Открыто карт (${gameState.todayCombo ? gameState.todayCombo.length : 0} / 2)`; }
+
+                // Одноразовая блокировка комбо дня на клиенте
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (gameState.lastComboDate === "COMPLETED_" + todayStr) { 
+                    document.getElementById("combo-status").innerText = "Статус: Комбо дня собрано! ✅ Награда получена строго 1 раз."; 
+                } else { 
+                    document.getElementById("combo-status").innerText = `Статус: Открыто карт комбо (${gameState.todayCombo ? gameState.todayCombo.length : 0} / 2)`; 
+                }
             }
+
             const walletStatus = document.getElementById("wallet-status");
             const tonBtn = document.getElementById("ton-connect-btn");
-            if (gameState.walletAddress) { walletStatus.innerText = `Привязан: ${gameState.walletAddress.slice(0, 10)}...`; walletStatus.style.color = "#00ff00"; tonBtn.disabled = true; tonBtn.innerText = "Подключено"; }
-            else { walletStatus.innerText = "Кошелек не подключен ❌"; walletStatus.style.color = "#ff4a4a"; tonBtn.disabled = false; tonBtn.innerText = "💎 Подключить Кошелек"; }
+            if (gameState.walletAddress) { 
+                walletStatus.innerText = `Привязан: ${gameState.walletAddress.slice(0, 10)}...`; 
+                walletStatus.style.color = "#00ff00"; 
+                tonBtn.disabled = true; 
+                tonBtn.innerText = "Подключено"; 
+            } else { 
+                walletStatus.innerText = "Кошелек не подключен ❌"; 
+                walletStatus.style.color = "#ff4a4a"; 
+                tonBtn.disabled = false; 
+            }
         }
 
         function switchScreen(screenName) {
@@ -378,11 +415,13 @@
             document.getElementById(`nav-${screenName}`).classList.add('active');
         }
 
-        function saveLocal() { localStorage.setItem(`bee_state_${gameState.telegramId}`, JSON.stringify({ balance: gameState.balance, totalEarned: gameState.totalEarned })); }
+        function saveLocal() { 
+            localStorage.setItem(`bee_state_${gameState.telegramId}`, JSON.stringify({ balance: gameState.balance, totalEarned: gameState.totalEarned })); 
+        }
 
         window.addEventListener('beforeunload', () => {
             saveLocal();
-            navigator.sendBeacon(`${BACKEND_URL}/api/user/sync`, JSON.stringify({ telegramId: gameState.telegramId, localBalance: gameState.balance, localTotalEarned: gameState.totalEarned }));
+            navigator.sendBeacon(`${BACKEND_URL}/api/user/sync`, JSON.stringify({ telegramId: gameState.telegramId, localBalance: Number(gameState.balance), localTotalEarned: Number(gameState.totalEarned) }));
         });
 
         function createClickAnimation(e) {
@@ -398,4 +437,5 @@
     </script>
 </body>
 </html>
+
 
