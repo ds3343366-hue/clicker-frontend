@@ -278,26 +278,31 @@
         }
 
         async function buyCard(cardId) {
-            if (gameState.level >= 30) return; 
-            const card = gameState.purchasedCards.find(c => c.cardId === cardId);
-            const currentLvl = card ? card.level : 0;
-            const cost = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLvl));
-            if (gameState.balance < cost) return alert("Недостаточно мёда в сотах!");
-            
-            const data = await request('/api/user/buy-card', { telegramId: gameState.telegramId, cardId });
-            if (data && data.success) { 
-                gameState = data.user; 
-                updateUI(); 
-                saveLocal(); 
-                // Атомарно проверяем комбо на сервере
-                const comboData = await request('/api/user/check-combo', { telegramId: gameState.telegramId, cardId });
-                if (comboData && comboData.success && comboData.comboCompleted) {
-                    alert("🎉 Вы угадали Ежедневное Комбо! Награда +250,000 🍯 зачислена!");
-                    gameState = comboData.user;
-                    updateUI();
-                }
-            } else { alert("Не удалось обновить соту на сервере"); }
+    if (gameState.level >= 30) return; 
+    const card = gameState.purchasedCards.find(c => c.cardId === cardId);
+    const currentLvl = card ? card.level : 0;
+    const cost = Math.floor(CARDS_CONFIG[cardId].basePrice * Math.pow(1.5, currentLvl));
+    if (gameState.balance < cost) return alert("Недостаточно мёда в сотах!");
+    
+    // ИСПРАВЛЕНИЕ: Точный вызов эндпоинта /api/user/buy-card
+    const data = await request('/api/user/buy-card', { telegramId: gameState.telegramId, cardId: cardId });
+    
+    if (data && data.success) { 
+        gameState = data.user; 
+        updateUI(); 
+        saveLocal(); 
+        
+        // Автоматическая проверка комбо-награды дня
+        const comboData = await request('/api/user/check-combo', { telegramId: gameState.telegramId, cardId: cardId });
+        if (comboData && comboData.success && comboData.comboCompleted) {
+            alert("🎉 Вы угадали Ежедневное Комбо! Награда +250,000 🍯 зачислена!");
+            gameState = comboData.user;
+            updateUI();
         }
+    } else { 
+        alert("Не удалось обновить соту на сервере. Попробуйте нажать кнопку 'Клик', чтобы синхронизировать профиль."); 
+    }
+}
 
         async function connectTonWallet() {
             document.getElementById("ton-connect-btn").innerText = "Авторизация...";
