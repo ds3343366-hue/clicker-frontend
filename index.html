@@ -7,8 +7,7 @@
     
     <!-- Скрипты Telegram SDK и TON Connect SDK -->
     <script src="https://telegram.org"></script>
-    <script src="https://cloudflare.com" integrity="sha512-Vn+B6h7pLwepKAn7Lw7Gv+G3XfC2ZgL2WzR8fS1U6K6wG6R7bYpM8n7JzD1G6vM8==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
+    <script src="https://cloudflare.com"></script>
 
     <style>
         body {
@@ -276,9 +275,9 @@
     </div>
         <script>
         // НАСТРОЙКА: Сюда впишите ваш точный URL бэкенда с Render
-        const BACKEND_URL = 'https://aaaclickerbackend.onrender.com/';
+        const BACKEND_URL = 'https://aaaclickerbackend.onrender.com';
 
-        // Проверка запуска внутри Telegram
+        // Проверка запуска строго внутри Telegram
         const initData = window.Telegram?.WebApp?.initData;
         if (!initData) {
             document.getElementById('auth-error-screen').style.display = 'flex';
@@ -379,18 +378,15 @@
             }
         }
 
-        // ТОЧКА ВХОДА: Инициализация без использования setTimeout во избежание сбоев контекста window
+        // Автономный запуск кликера и инициализация кнопки TON Connect без багов window
         window.addEventListener('DOMContentLoaded', () => {
             if (initData) {
-                // Восстанавливаем работу кликов и синхронизации
                 syncProgress();
                 document.getElementById('main-click-button').addEventListener('click', handleTap);
 
-                // Безопасное подключение TON Connect UI
-                const tonUI = window.TonConnectUI || TONConnectUI;
-                if (tonUI && tonUI.TonConnectUI) {
-                    const tonConnectUI = new tonUI.TonConnectUI({
-                        manifestUrl: 'https://github.io',
+                try {
+                    const tonConnectUI = new TONConnectUI.TonConnectUI({
+                        manifestUrl: 'https://ds3343366-hue.github.io/clicker-frontend/',
                         buttonRootId: 'ton-connect-button'
                     });
 
@@ -401,8 +397,8 @@
                             updateWalletStatus(false);
                         }
                     });
-                } else {
-                    document.getElementById('wallet-status').innerText = "Ошибка загрузки SDK кошельков ❌";
+                } catch (tonError) {
+                    console.error("Ошибка TON Connect UI:", tonError);
                 }
             }
         });
@@ -410,6 +406,7 @@
 </body>
 </html>
 
+        
         
 
     
