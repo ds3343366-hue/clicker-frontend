@@ -332,7 +332,7 @@
                 document.getElementById('daily-status-label').innerText = "Заходи раз в день и забирай +5,000 🍯";
             }
         }
-                // ВЫНОСИМ ВСЕ ФУНКЦИИ В ГЛОБАЛЬНЫЙ КОНТЕКСТ WINDOW (АНТИ-БЛОКИРОВКА И КРАШ JS)
+       // ВЫНОСИМ ВСЕ ФУНКЦИИ В ГЛОБАЛЬНЫЙ КОНТЕКСТ WINDOW (АНТИ-БЛОКИРОВКА И КРАШ JS)
         window.buyCardAction = function(cardId) {
             fetch(`${BACKEND_URL}/api/user/buy-card`, { 
                 method: 'POST', 
@@ -404,13 +404,14 @@
             navigator.clipboard.writeText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
         };
 
-        // ЖЕСТКИЕ СЛУШАТЕЛИ НАЖАТИЙ (ВЫЗЫВАЮТ ГЛОБАЛЬНЫЕ МЕТОДЫ БЕЗ ЗАТИРАНИЯ ТЕКСТА)
+        // ЖЕСТКИЕ СЛУШАТЕЛИ НАЖАТИЙ (ФИКС КОНТЕКСТА ЭЛЕМЕНТОВ 'THIS')
         window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('nav-btn-click').addEventListener('click', function() { openTab('tab-click', this); });
-            document.getElementById('nav-btn-cards').addEventListener('click', function() { openTab('tab-cards', this); });
-            document.getElementById('nav-btn-boosts').addEventListener('click', function() { openTab('tab-boosts', this); });
-            document.getElementById('nav-btn-friends').addEventListener('click', function() { openTab('tab-friends', this); });
-            document.getElementById('nav-btn-airdrop').addEventListener('click', function() { openTab('tab-airdrop', this); });
+            // Исправлено: Явная передача контекста элемента через Event-target аргумент
+            document.getElementById('nav-btn-click').addEventListener('click', function(e) { openTab('tab-click', e.currentTarget); });
+            document.getElementById('nav-btn-cards').addEventListener('click', function(e) { openTab('tab-cards', e.currentTarget); });
+            document.getElementById('nav-btn-boosts').addEventListener('click', function(e) { openTab('tab-boosts', e.currentTarget); });
+            document.getElementById('nav-btn-friends').addEventListener('click', function(e) { openTab('tab-friends', e.currentTarget); });
+            document.getElementById('nav-btn-airdrop').addEventListener('click', function(e) { openTab('tab-airdrop', e.currentTarget); });
 
             document.getElementById('honey-bee-tap').addEventListener('click', () => {
                 const power = userData.multitapLevel || 1;
@@ -477,4 +478,5 @@
     </script>
 </body>
 </html>
+
 
