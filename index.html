@@ -275,8 +275,17 @@
         </section>
     </div>
         <script>
-        // НАСТРОЙКА: Сюда впишите ваш URL бэкенда с Render
-        const BACKEND_URL = 'https://aaaclickerbackend.onrender.com';
+        // НАСТРОЙКА: Сюда впишите ваш точный URL бэкенда с Render
+        const BACKEND_URL = 'https://aaaclickerbackend.onrender.com/';
+
+        // Проверка запуска внутри Telegram
+        const initData = window.Telegram?.WebApp?.initData;
+        if (!initData) {
+            document.getElementById('auth-error-screen').style.display = 'flex';
+        } else {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        }
 
         // Функция расчета рангов и обновления ленты прохождения уровня
         function updateLevelProgressBar(balance) {
@@ -303,7 +312,6 @@
 
         // Универсальная функция запросов к бэкенду
         async function apiRequest(endpoint, data = {}) {
-            const initData = window.Telegram?.WebApp?.initData;
             try {
                 const response = await fetch(`${BACKEND_URL}${endpoint}`, {
                     method: 'POST',
@@ -370,56 +378,39 @@
                 statusEl.className = "status-error";
             }
         }
-============================================================================
-        // ТОЧКА ВХОДА: АВТОНОМНАЯ ИНИЦИАЛИЗАЦИЯ И ДИАГНОСТИКА ОШИБОК
-        // ============================================================================
+
+        // ТОЧКА ВХОДА: Инициализация без использования setTimeout во избежание сбоев контекста window
         window.addEventListener('DOMContentLoaded', () => {
-            const errorText = document.querySelector('#auth-error-screen p');
-            const errorTitle = document.querySelector('#auth-error-screen h2');
-            
-            setTimeout(() => {
-                // Шаг 1: Проверяем, загрузился ли базовый скрипт Telegram
-                if (!window.Telegram) {
-                    errorTitle.innerText = "Ошибка: Telegram SDK";
-                    errorText.innerText = "Не удалось загрузить скрипт telegram-web-app.js. Проверьте подключение.";
-                    document.getElementById('auth-error-screen').style.display = 'flex';
-                    return;
+            if (initData) {
+                // Восстанавливаем работу кликов и синхронизации
+                syncProgress();
+                document.getElementById('main-click-button').addEventListener('click', handleTap);
+
+                // Безопасное подключение TON Connect UI
+                const tonUI = window.TonConnectUI || TONConnectUI;
+                if (tonUI && tonUI.TonConnectUI) {
+                    const tonConnectUI = new tonUI.TonConnectUI({
+                        manifestUrl: 'https://github.io',
+                        buttonRootId: 'ton-connect-button'
+                    });
+
+                    tonConnectUI.onStatusChange((wallet) => {
+                        if (wallet && wallet.account) {
+                            saveWallet(wallet.account.address);
+                        } else {
+                            updateWalletStatus(false);
+                        }
+                    });
+                } else {
+                    document.getElementById('wallet-status').innerText = "Ошибка загрузки SDK кошельков ❌";
                 }
-
-                const tg = window.Telegram.WebApp;
-                const initData = tg.initData;
-
-                // Шаг 2: Проверяем наличие строки авторизации initData
-                if (!initData || initData.trim() === "") {
-                    errorTitle.innerText = "Доступ ограничен";
-                    errorText.innerText = "Сервер Telegram не передал данные авторизации (initData пуст). Убедитесь, что запускаете Mini App по ссылке вида t.me/richmining_bot/app.";
-                    document.getElementById('auth-error-screen').style.display = 'flex';
-                    return;
-                }
-
-// Инициализация TON Connect с явным указанием глобального объекта окна
-if (window.TonConnectUI && window.TonConnectUI.TonConnectUI) {
-    const tonConnectUI = new window.TonConnectUI.TonConnectUI({
-        manifestUrl: 'https://github.io',
-        buttonRootId: 'ton-connect-button'
-    });
-
-    // Слушаем изменение статуса кошелька (подключение/отключение)
-    tonConnectUI.onStatusChange((wallet) => {
-        if (wallet && wallet.account) {
-            console.log("Кошелек успешно подключен:", wallet.account.address);
-            saveWallet(wallet.account.address);
-        } else {
-            updateWalletStatus(false);
-        }
-    });
-} else {
-    console.error("Критическая ошибка: TON Connect SDK не инициализирован в window.");
-    document.getElementById('wallet-status').innerText = "Ошибка загрузки SDK кошельков ❌";
-}
-</script>
+            }
+        });
+    </script>
 </body>
 </html>
+
+        
 
     
        
