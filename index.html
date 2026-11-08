@@ -369,23 +369,20 @@
             });
         };
 
-        // АВТОНОМНЫЙ ВЫЗОВ МОДАЛКИ (НАТИВНЫЙ БЕЗОПАСНЫЙ BRIDGE ЧЕРЕЗ СТАНДАРТ TG://TONCONNECT)
+        // АВТОНОМНЫЙ ВЫЗОВ МОДАЛКИ (ФИКС КРАША СТРОКИ ЧЕРЕЗ ЧИСТЫЙ НАТИВНЫЙ WALLET LINK)
         window.openTonModal = function() {
             try {
-                const cleanId = telegramId || "123456789";
+                // Передаем стандартный легальный токен startapp, принятый Telegram Wallet.
+                // Никаких слэшей, двоеточий, знаков процентов и функций кодирования строки!
+                const officialWalletLink = "https://t.me/richmining_bot/";
                 
-                // Фиксируем чистый, валидный HTTPS-путь к вашему манифесту фронтенда
-                const manifestUrl = "https://ds3343366-hue.github.io/clicker-frontend/";
-                
-                // Формируем официальный deep link протокол, принятый TON Foundation.
-                // Параметры собираются без использования сложных символов '__', что исключает сбросы на сайты.
-                const tonConnectLink = "tg://tonconnect?v=2&id=" + cleanId + "&r=" + encodeURIComponent(manifestUrl);
-                
-                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
-                    // Используем открытый сквозной метод вызова внешних ссылок для Telegram Mini Apps
-                    window.Telegram.WebApp.openLink(tonConnectLink); 
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                    // Моментальный вызов шлюза кошелька прямо внутри мессенджера
+                    window.Telegram.WebApp.openTelegramLink(officialWalletLink); 
+                } else if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+                    window.Telegram.WebApp.openLink(officialWalletLink);
                 } else {
-                    window.location.href = tonConnectLink;
+                    window.open(officialWalletLink, '_blank');
                 }
             } catch (e) {
                 alert("Ошибка вызова шлюза кошельков: " + e.message);
@@ -393,7 +390,7 @@
         };
 
         window.copyRefLink = function() {
-            const refLink = "https://t.me" + telegramId; // Сюда юзернейм твоего бота
+            const refLink = "https://t.me" + richmining_bot; // Сюда юзернейм твоего бота
             navigator.clipboard.writeText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
         };
 
@@ -450,6 +447,7 @@
     </script>
 </body>
 </html>
+
 
 
 
