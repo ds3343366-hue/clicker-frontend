@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bee GameFi Hive Clicker</title>
     
-    <!-- Подключаем SDK (Telegram и TON Connect) -->
+    <!-- Подключаем проверенные, бесконфликтные версии SDK -->
     <script src="https://telegram.org"></script>
-    <script src="https://unpkg.com"></script>
+    <script src="https://cloudflare.com"></script>
 
     <style>
         :root {
@@ -83,9 +83,6 @@
             margin-top: 4px;
             font-weight: bold;
         }
-    </style>
-</head>
-    <style>
         .click-area {
             display: flex;
             justify-content: center;
@@ -121,6 +118,11 @@
 </head>
 <body>
     <div class="container">
+        <div class="header-stats">
+            <div>Тап: <span id="tap-power">+1</span></div>
+            <div>Пассив улья: <span id="passive-income">0/ч</span></div>
+        </div>
+
         <!-- ВКЛАДКА 1: КЛИКЕР -->
         <div id="tab-click" class="tab-content active">
             <div class="balance-container">
@@ -218,7 +220,7 @@
         const telegramId = tg?.initDataUnsafe?.user?.id?.toString() || "123456789";
         const username = tg?.initDataUnsafe?.user?.username || "Test_Bee";
         
-        // Мгновенное восстановление автономной памяти (Защита от обнулений)
+        // Восстановление автономного кэша для защиты от сбросов баланса
         const cachedState = localStorage.getItem(`bee_user_state_${telegramId}`);
         let userData = cachedState ? JSON.parse(cachedState) : {
             balance: 0, totalEarned: 0, level: 1, profitPerHour: 0, energy: 1000, maxEnergy: 1000,
@@ -237,6 +239,7 @@
         }
 
         function openTab(tabId, btnElement) {
+            if (!btnElement) return;
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
@@ -255,7 +258,7 @@
             })
             .then(res => res.json())
             .then(data => { if (data.success && data.user) { userData = data.user; saveStateLocally(); updateUI(); } })
-            .catch(e => console.log("Работа на локальном кэше памяти"));
+            .catch(e => console.log("Работа на автономном кэше устройства..."));
         }
 
         function recalculateLevelProgression() {
@@ -284,7 +287,7 @@
             const totalEarned = userData.totalEarned || 0;
             const nextLevelTarget = BACKEND_LEVELS[currentLevel - 1];
 
-            // ЛЕНТА ПРОГРЕССА И ФИКСАЦИЯ 30 УРОВНЯ БЕЗ СЧЕТЧИКА ТАПОВ
+            // ФИКСАЦИЯ ЛЕНТЫ 30 УРОВНЯ: Полностью убираем счетчик остатка тапов
             if (currentLevel >= MAX_LEVELS) {
                 document.getElementById('level-progress-bar').style.width = "100%";
                 document.getElementById('level-progress-bar').style.backgroundColor = "#00ff00";
@@ -332,71 +335,37 @@
                 document.getElementById('daily-status-label').innerText = "Заходи раз в день и забирай +5,000 🍯";
             }
         }
-       // ВЫНОСИМ ВСЕ ФУНКЦИИ В ГЛОБАЛЬНЫЙ КОНТЕКСТ WINDOW (АНТИ-БЛОКИРОВКА И КРАШ JS)
+        // НАЗНАЧАЕМ ВСЕ МЕТОДЫ В WINDOW ДЛЯ ГАРАНТИИ ВЫЗОВА БЕЗ КРАШЕЙ JS
         window.buyCardAction = function(cardId) {
-            fetch(`${BACKEND_URL}/api/user/buy-card`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ telegramId, cardId }) 
-            })
-            .then(res => res.json())
-            .then(data => { if (data.success) { userData = data.user; updateUI(); saveStateLocally(); } });
+            fetch(`${BACKEND_URL}/api/user/buy-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) })
+            .then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); saveStateLocally(); } });
             
-            fetch(`${BACKEND_URL}/api/user/check-combo`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ telegramId, cardId }) 
-            })
-            .then(res => res.json())
-            .then(data => { if (data.success) { userData = data.user; updateUI(); saveStateLocally(); } });
+            fetch(`${BACKEND_URL}/api/user/check-combo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, cardId }) })
+            .then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); saveStateLocally(); } });
         };
 
         window.upgradeAction = function(type) {
             const cost = type === 'multitap' ? userData.multitapLevel * 200 : userData.offlineMiningLevel * 500;
-            fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ telegramId, type, cost: Number(cost) }) 
-            })
-            .then(res => res.json())
-            .then(data => { if (data.success) { userData = data.user; updateUI(); saveStateLocally(); } });
+            fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type, cost: Number(cost) }) })
+            .then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); saveStateLocally(); } });
         };
 
         window.executeEnergyBoost = function() {
-            fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ telegramId, type: 'energy', cost: 150 }) 
-            })
-            .then(res => res.json())
-            .then(data => { if (data.success) { userData = data.user; updateUI(); saveStateLocally(); } });
+            fetch(`${BACKEND_URL}/api/user/upgrade-stat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, type: 'energy', cost: 150 }) })
+            .then(res => res.json()).then(data => { if (data.success) { userData = data.user; updateUI(); saveStateLocally(); } });
         };
 
         window.executeDailyClaim = function() {
-            fetch(`${BACKEND_URL}/api/user/claim-daily`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ telegramId }) 
-            })
+            fetch(`${BACKEND_URL}/api/user/claim-daily`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId }) })
             .then(res => res.json())
             .then(data => { 
-                if (data.success) { 
-                    userData = data.user; 
-                    updateUI(); 
-                    saveStateLocally(); 
-                    if (tg) tg.showAlert("🎁 Вы забрали ежедневный бонус: +5,000 🍯!");
-                } else { alert(data.error || "Ошибка получения бонуса"); }
-            }).catch(err => alert("Повторите попытку через секунду..."));
+                if (data.success) { userData = data.user; updateUI(); saveStateLocally(); if (tg) tg.showAlert("🎁 Вы забрали ежедневный бонус: +5,000 🍯!"); } 
+                else { alert(data.error || "Ошибка получения бонуса"); }
+            });
         };
 
         window.openTonModal = function() {
-            if (window.tonConnectUIInstance) { 
-                window.tonConnectUIInstance.openModal().catch(e => {
-                    console.error("Критический сбой открытия модалки TON Connect:", e);
-                }); 
-            } else {
-                alert("Шлюз TON Connect инициализируется, подождите секунду...");
-            }
+            if (window.tonConnectUIInstance) { window.tonConnectUIInstance.openModal().catch(e => console.log(e)); }
         };
 
         window.copyRefLink = function() {
@@ -404,9 +373,8 @@
             navigator.clipboard.writeText(refLink).then(() => { alert("Ссылка скопирована! 📋"); });
         };
 
-        // ЖЕСТКИЕ СЛУШАТЕЛИ НАЖАТИЙ (ФИКС КОНТЕКСТА ЭЛЕМЕНТОВ 'THIS')
+        // НАЗНАЧЕНИЕ ЖЕСТКИХ СЛУШАТЕЛЕЙ ADDEVENTLISTENER С ФИКСОМ КРАША CONTEXT CLASSLIST
         window.addEventListener('DOMContentLoaded', () => {
-            // Исправлено: Явная передача контекста элемента через Event-target аргумент
             document.getElementById('nav-btn-click').addEventListener('click', function(e) { openTab('tab-click', e.currentTarget); });
             document.getElementById('nav-btn-cards').addEventListener('click', function(e) { openTab('tab-cards', e.currentTarget); });
             document.getElementById('nav-btn-boosts').addEventListener('click', function(e) { openTab('tab-boosts', e.currentTarget); });
@@ -421,17 +389,14 @@
                 fetch(`${BACKEND_URL}/api/user/click`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId, clicksCount: 1 }) });
             });
 
-            // Навешиваем клики на карточки сот
             document.getElementById('buy-ceo-card').addEventListener('click', () => window.buyCardAction('ceo_card'));
             document.getElementById('buy-marketing-card').addEventListener('click', () => window.buyCardAction('marketing_card'));
             document.getElementById('buy-crypto-card').addEventListener('click', () => window.buyCardAction('crypto_card'));
 
-            // Навешиваем клики на бусты
             document.getElementById('boost-multitap').addEventListener('click', () => window.upgradeAction('multitap'));
             document.getElementById('boost-offline').addEventListener('click', () => window.upgradeAction('offline'));
             document.getElementById('boost-energy').addEventListener('click', () => window.executeEnergyBoost());
 
-            // Навешиваем клики на ежедневную награду, рефералы и TON
             document.getElementById('claim-daily-btn').addEventListener('click', () => window.executeDailyClaim());
             document.getElementById('custom-ton-btn').addEventListener('click', () => window.openTonModal());
             document.getElementById('invite-btn').addEventListener('click', () => window.copyRefLink());
@@ -442,12 +407,11 @@
         window.addEventListener('unload', saveStateLocally);
         if (tg) { tg.onEvent('viewportChanged', saveStateLocally); }
 
-        // === ИСПРАВЛЕННЫЙ АБСОЛЮТНЫЙ ПУТЬ МАНИФЕСТА TON CONNECT (БЕЗ ДУБЛИРОВАНИЯ СЛЭШЕЙ) ===
-        const finalManifestUrl = "https://ds3343366-hue.github.io/clicker-frontend" + Date.now();
+        // === СВЕРХНАДЕЖНАЯ СТАБИЛЬНАЯ ИНИЦИАЛИЗАЦИЯ TON CONNECT UI 0.0.34 ===
+        const finalManifestUrl = "https://ds3343366-hue.github.io/clicker-frontend/" + Date.now();
 
-        const sdkNamespace = window.TonConnectSDK ? window.TonConnectSDK : window.TON_CONNECT_UI;
-        if (sdkNamespace && sdkNamespace.TonConnectUI) {
-            window.tonConnectUIInstance = new sdkNamespace.TonConnectUI({
+        if (window.TON_CONNECT_UI && window.TON_CONNECT_UI.TonConnectUI) {
+            window.tonConnectUIInstance = new window.TON_CONNECT_UI.TonConnectUI({
                 manifestUrl: finalManifestUrl
             });
             window.tonConnectUIInstance.uiOptions = { theme: 'DARK' };
@@ -478,5 +442,4 @@
     </script>
 </body>
 </html>
-
 
