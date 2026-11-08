@@ -7,7 +7,8 @@
     
     <!-- Скрипты Telegram SDK и TON Connect SDK -->
     <script src="https://telegram.org"></script>
-    <script src="https://unpkg.com"></script>
+    <script src="https://cloudflare.com" integrity="sha512-Vn+B6h7pLwepKAn7Lw7Gv+G3XfC2ZgL2WzR8fS1U6K6wG6R7bYpM8n7JzD1G6vM8==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 
     <style>
         body {
@@ -273,18 +274,9 @@
             <div id="wallet-status" class="status-error">Кошелек не подключен ❌</div>
         </section>
     </div>
-    <script>
+        <script>
         // НАСТРОЙКА: Сюда впишите ваш URL бэкенда с Render
         const BACKEND_URL = 'https://aaaclickerbackend.onrender.com';
-
-        // УБРАНА СИМУЛЯЦИЯ: Строго проверяем запуск внутри Telegram
-        const initData = window.Telegram?.WebApp?.initData;
-        if (!initData) {
-            document.getElementById('auth-error-screen').style.display = 'flex';
-        } else {
-            window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand();
-        }
 
         // Функция расчета рангов и обновления ленты прохождения уровня
         function updateLevelProgressBar(balance) {
@@ -299,7 +291,7 @@
                 maxCoins = 100000;
             } else if (balance >= 100000) {
                 rank = "Хранитель Улья (Ур. 4)";
-                maxCoins = balance; // Максимальный уровень достигнут
+                maxCoins = balance;
             }
 
             const percentage = maxCoins === balance ? 100 : Math.min((balance / maxCoins) * 100, 100);
@@ -309,7 +301,9 @@
             document.getElementById('progress-fill').style.width = `${percentage}%`;
         }
 
+        // Универсальная функция запросов к бэкенду
         async function apiRequest(endpoint, data = {}) {
+            const initData = window.Telegram?.WebApp?.initData;
             try {
                 const response = await fetch(`${BACKEND_URL}${endpoint}`, {
                     method: 'POST',
@@ -376,27 +370,56 @@
                 statusEl.className = "status-error";
             }
         }
-
+============================================================================
+        // ТОЧКА ВХОДА: АВТОНОМНАЯ ИНИЦИАЛИЗАЦИЯ И ДИАГНОСТИКА ОШИБОК
+        // ============================================================================
         window.addEventListener('DOMContentLoaded', () => {
-            if (initData) {
-                syncProgress();
-                document.getElementById('main-click-button').addEventListener('click', handleTap);
+            const errorText = document.querySelector('#auth-error-screen p');
+            const errorTitle = document.querySelector('#auth-error-screen h2');
+            
+            setTimeout(() => {
+                // Шаг 1: Проверяем, загрузился ли базовый скрипт Telegram
+                if (!window.Telegram) {
+                    errorTitle.innerText = "Ошибка: Telegram SDK";
+                    errorText.innerText = "Не удалось загрузить скрипт telegram-web-app.js. Проверьте подключение.";
+                    document.getElementById('auth-error-screen').style.display = 'flex';
+                    return;
+                }
 
-                const tonConnectUI = new TONConnectUI.TonConnectUI({
-                    manifestUrl: 'https://github.io',
-                    buttonRootId: 'ton-connect-button'
-                });
+                const tg = window.Telegram.WebApp;
+                const initData = tg.initData;
 
-                tonConnectUI.onStatusChange((wallet) => {
-                    if (wallet && wallet.account) {
-                        saveWallet(wallet.account.address);
-                    } else {
-                        updateWalletStatus(false);
-                    }
-                });
-            }
-        });
-    </script>
+                // Шаг 2: Проверяем наличие строки авторизации initData
+                if (!initData || initData.trim() === "") {
+                    errorTitle.innerText = "Доступ ограничен";
+                    errorText.innerText = "Сервер Telegram не передал данные авторизации (initData пуст). Убедитесь, что запускаете Mini App по ссылке вида t.me/richmining_bot/app.";
+                    document.getElementById('auth-error-screen').style.display = 'flex';
+                    return;
+                }
+
+// Инициализация TON Connect с явным указанием глобального объекта окна
+if (window.TonConnectUI && window.TonConnectUI.TonConnectUI) {
+    const tonConnectUI = new window.TonConnectUI.TonConnectUI({
+        manifestUrl: 'https://github.io',
+        buttonRootId: 'ton-connect-button'
+    });
+
+    // Слушаем изменение статуса кошелька (подключение/отключение)
+    tonConnectUI.onStatusChange((wallet) => {
+        if (wallet && wallet.account) {
+            console.log("Кошелек успешно подключен:", wallet.account.address);
+            saveWallet(wallet.account.address);
+        } else {
+            updateWalletStatus(false);
+        }
+    });
+} else {
+    console.error("Критическая ошибка: TON Connect SDK не инициализирован в window.");
+    document.getElementById('wallet-status').innerText = "Ошибка загрузки SDK кошельков ❌";
+}
+</script>
 </body>
 </html>
 
+    
+       
