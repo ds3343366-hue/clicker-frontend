@@ -248,6 +248,273 @@
                     <span class="price">💰 500</span>
                 </div>
                 <div class="shop-item" onclick="buyUpgrade('ton')">
+                    <!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bee GameFi Hive Clicker</title>
+    
+    <!-- ИСПРАВЛЕННЫЕ официальные SDK Telegram и TON Connect -->
+    <script src="https://telegram.org"></script>
+    <script src="https://unpkg.com"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(180deg, #1f140e 0%, #120b07 100%);
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 450px;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 153, 0, 0.2);
+        }
+
+        .main-screen {
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .level-container {
+            width: 100%;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 14px;
+            box-sizing: border-box;
+            border: 1px solid rgba(255, 153, 0, 0.1);
+        }
+
+        .level-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: #ffaa00;
+            font-weight: bold;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 153, 0, 0.1);
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff9900, #ffcc00);
+            box-shadow: 0 0 10px rgba(255, 153, 0, 0.5);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+
+        .balance-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .currency-icon { font-size: 36px; }
+
+        #balance-display {
+            font-size: 48px;
+            margin: 0;
+            font-weight: 800;
+            color: #ffaa00;
+            text-shadow: 0 0 20px rgba(255, 153, 0, 0.3);
+        }
+
+        .click-button-wrapper {
+            margin: 20px 0;
+        }
+
+        .honey-egg {
+            background: radial-gradient(circle, #ffcc00 0%, #d47a00 100%);
+            font-size: 80px;
+            border: none;
+            width: 185px;
+            height: 185px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(255, 153, 0, 0.6), 
+                        0 0 50px rgba(255, 153, 0, 0.3), 
+                        inset 0 -8px 0 rgba(0,0,0,0.2);
+            transition: transform 0.05s ease, box-shadow 0.1s ease;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .honey-egg:active {
+            transform: scale(0.93);
+            box-shadow: 0 0 15px rgba(255, 153, 0, 0.8), 
+                        0 0 35px rgba(255, 153, 0, 0.4), 
+                        inset 0 -4px 0 rgba(0,0,0,0.2);
+        }
+
+        .claim-btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            border: none;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            background: linear-gradient(90deg, #ff9900, #ffcc00);
+            color: #120b07;
+            transition: opacity 0.2s;
+        }
+
+        .claim-btn:disabled {
+            background: rgba(255, 255, 255, 0.08);
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        h3 {
+            font-size: 17px;
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: #ffaa00;
+        }
+
+        .shop-section, .airdrop-section {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 153, 0, 0.1);
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .shop-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .shop-item:active {
+            background: rgba(255, 153, 0, 0.12);
+            border-color: rgba(255, 153, 0, 0.3);
+        }
+
+        .shop-item h4 { margin: 0 0 4px 0; font-size: 14px; }
+        .shop-item p { margin: 0 0 8px 0; font-size: 12px; color: #b5b5b5; }
+        .price { font-size: 13px; font-weight: bold; color: #ffaa00; }
+        .airdrop-section { text-align: center; }
+        .airdrop-section p { font-size: 13px; color: #b5b5b5; margin-bottom: 12px; }
+        #ton-connect-button { display: inline-flex; justify-content: center; margin-bottom: 8px; }
+        #wallet-status { font-size: 13px; font-weight: bold; margin-top: 4px; }
+        .status-success { color: #4cd964; }
+        .status-error { color: #ff3b30; }
+        
+        #auth-error-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #120b07;
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="auth-error-screen">
+        <div>
+            <span style="font-size: 64px;">🐝</span>
+            <h2 style="color: #ffaa00;">Пожалуйста, запустите игру через Telegram</h2>
+            <p style="color: #b5b5b5;">Для защиты от взлома вход доступен только из официального приложения Telegram.</p>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <header class="game-header">
+            <div class="stat-box">👆 Клик: +<span id="click-power-display">1</span></div>
+            <div class="stat-box">🐝 Пассив: +<span id="passive-rate-display">60</span>/ч</div>
+        </header>
+
+        <main class="main-screen">
+            <div class="level-container">
+                <div class="level-info">
+                    <span id="level-name">Ранг: Личинка (Ур. 1)</span>
+                    <span id="level-fraction">0 / 5000</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="progress-fill" class="progress-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="balance-container">
+                <span class="currency-icon">🍯</span>
+                <h1 id="balance-display">0</h1>
+            </div>
+
+            <div class="click-button-wrapper">
+                <button id="main-click-button" class="honey-egg">🐝</button>
+            </div>
+
+            <button id="claim-passive-btn" class="claim-btn" disabled>⏳ Синхронизация улья...</button>
+        </main>
+
+        <section class="shop-section">
+            <h3>Развитие Бизнес-Сот 📊</h3>
+            <div class="shop-grid">
+                <div class="shop-item" onclick="buyUpgrade('asic')">
+                    <h4>АСИК Майнинг</h4>
+                    <p>+150 🍯/ч</p>
+                    <span class="price">💰 500</span>
+                </div>
+                <div class="shop-item" onclick="buyUpgrade('ton')">
                     <h4>Маркетинг Роя</h4>
                     <p>+400 🍯/ч</p>
                     <span class="price">💰 2000</span>
@@ -265,7 +532,6 @@
             </div>
         </section>
 
-        <!-- AirDrop -->
         <section class="airdrop-section">
             <h3>Программа AirDrop 💎</h3>
             <p>Официальная привязка кошелька TON Connect</p>
@@ -273,20 +539,23 @@
             <div id="wallet-status" class="status-error">Кошелек не подключен ❌</div>
         </section>
     </div>
-        <script>
-        // НАСТРОЙКА: Сюда впишите ваш точный URL бэкенда с Render
+    <script>
         const BACKEND_URL = 'https://aaaclickerbackend.onrender.com';
+        const tg = window.Telegram?.WebApp;
+        const initData = tg?.initData;
 
-        // Проверка запуска строго внутри Telegram
-        const initData = window.Telegram?.WebApp?.initData;
+        let localBalance = 0;
+        let clickPower = 1;
+        let pendingClicks = 0;
+        let clickBatchTimer = null;
+
         if (!initData) {
             document.getElementById('auth-error-screen').style.display = 'flex';
         } else {
-            window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand();
+            tg.ready();
+            tg.expand();
         }
 
-        // Функция расчета рангов и обновления ленты прохождения уровня
         function updateLevelProgressBar(balance) {
             let rank = "Личинка (Ур. 1)";
             let maxCoins = 5000;
@@ -303,13 +572,17 @@
             }
 
             const percentage = maxCoins === balance ? 100 : Math.min((balance / maxCoins) * 100, 100);
-            
             document.getElementById('level-name').innerText = `Ранг: ${rank}`;
             document.getElementById('level-fraction').innerText = `${Math.floor(balance)} / ${maxCoins}`;
             document.getElementById('progress-fill').style.width = `${percentage}%`;
         }
 
-        // Универсальная функция запросов к бэкенду
+        function renderBalance(val) {
+            localBalance = Math.floor(val);
+            document.getElementById('balance-display').innerText = localBalance;
+            updateLevelProgressBar(localBalance);
+        }
+
         async function apiRequest(endpoint, data = {}) {
             try {
                 const response = await fetch(`${BACKEND_URL}${endpoint}`, {
@@ -320,45 +593,79 @@
                 return await response.json();
             } catch (error) {
                 console.error(`Ошибка запроса к ${endpoint}:`, error);
+                return null;
             }
         }
 
         async function syncProgress() {
             const data = await apiRequest('/api/sync');
             if (data && !data.error) {
-                document.getElementById('balance-display').innerText = Math.floor(data.balance);
+                clickPower = data.clickPower;
+                renderBalance(data.balance);
                 document.getElementById('click-power-display').innerText = data.clickPower;
                 document.getElementById('passive-rate-display').innerText = data.passiveRate;
-                updateLevelProgressBar(data.balance);
                 if (data.walletAddress) updateWalletStatus(true);
+
+                const claimBtn = document.getElementById('claim-passive-btn');
+                if (data.canClaim && data.minedAmount > 0) {
+                    claimBtn.disabled = false;
+                    claimBtn.innerText = `🍯 Собрать пассивный доход (+${Math.floor(data.minedAmount)})`;
+                } else {
+                    claimBtn.disabled = true;
+                    const mins = Math.ceil((data.secondsToClaim || 0) / 60);
+                    claimBtn.innerText = `⏳ До сбора пассива: ~${mins} мин.`;
+                }
             }
         }
 
-        async function handleTap() {
-            const balanceEl = document.getElementById('balance-display');
-            const clickPower = parseInt(document.getElementById('click-power-display').innerText);
-            
-            let currentBalance = parseInt(balanceEl.innerText) + clickPower;
-            balanceEl.innerText = currentBalance;
-            updateLevelProgressBar(currentBalance);
+        // Пакетная отправка кликов на сервер (защита от потери тапов)
+        async function flushClicks() {
+            if (pendingClicks <= 0) return;
+            const countToSend = pendingClicks;
+            pendingClicks = 0;
 
-            const data = await apiRequest('/api/click');
-            if (data && !data.error) {
-                balanceEl.innerText = Math.floor(data.balance);
-                updateLevelProgressBar(data.balance);
+            const data = await apiRequest('/api/click', { count: countToSend });
+            if (data && !data.error && pendingClicks === 0) {
+                renderBalance(data.balance);
+            }
+        }
+
+        function handleTap() {
+            if (tg?.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+            renderBalance(localBalance + clickPower);
+            pendingClicks += 1;
+
+            clearTimeout(clickBatchTimer);
+            if (pendingClicks >= 15) {
+                flushClicks();
+            } else {
+                clickBatchTimer = setTimeout(flushClicks, 400);
+            }
+        }
+
+        async function claimPassive() {
+            const claimBtn = document.getElementById('claim-passive-btn');
+            claimBtn.disabled = true;
+            const data = await apiRequest('/api/claim');
+            if (data && data.success) {
+                renderBalance(data.balance);
+                syncProgress();
             }
         }
 
         async function buyUpgrade(itemType) {
+            await flushClicks();
             const data = await apiRequest('/api/buy', { itemType });
             if (data && !data.error) {
-                document.getElementById('balance-display').innerText = Math.floor(data.balance);
+                clickPower = data.clickPower;
+                renderBalance(data.balance);
                 document.getElementById('click-power-display').innerText = data.clickPower;
                 document.getElementById('passive-rate-display').innerText = data.passiveRate;
-                updateLevelProgressBar(data.balance);
-                alert("Улучшение активировано! 🐝");
+                if (tg?.showAlert) tg.showAlert("Улучшение активировано! 🐝");
             } else if (data && data.error) {
-                alert(`Ошибка: ${data.error}`);
+                if (tg?.showAlert) tg.showAlert(`Ошибка: ${data.error}`);
             }
         }
 
@@ -378,15 +685,15 @@
             }
         }
 
-        // Автономный запуск кликера и инициализация кнопки TON Connect без багов window
         window.addEventListener('DOMContentLoaded', () => {
             if (initData) {
                 syncProgress();
                 document.getElementById('main-click-button').addEventListener('click', handleTap);
+                document.getElementById('claim-passive-btn').addEventListener('click', claimPassive);
 
                 try {
-                    const tonConnectUI = new TONConnectUI.TonConnectUI({
-                        manifestUrl: 'https://ds3343366-hue.github.io/clicker-frontend/',
+                    const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+                        manifestUrl: 'https://github.io',
                         buttonRootId: 'ton-connect-button'
                     });
 
@@ -405,6 +712,7 @@
     </script>
 </body>
 </html>
+
 
         
         
