@@ -2,260 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bee GameFi Hive Clicker</title>
-    
-    <!-- Скрипты Telegram SDK и TON Connect SDK -->
-    <script src="https://telegram.org"></script>
-    <script src="https://cloudflare.com"></script>
-
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            /* Изменено на темно-коричневый градиент */
-            background: linear-gradient(180deg, #1f140e 0%, #120b07 100%);
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        .game-container {
-            width: 100%;
-            max-width: 450px;
-            min-height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .game-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .stat-box {
-            background: rgba(255, 255, 255, 0.04);
-            padding: 10px 15px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: bold;
-            border: 1px solid rgba(255, 153, 0, 0.2);
-        }
-
-        .main-screen {
-            text-align: center;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* Индикатор уровня и лента прогресса */
-        .level-container {
-            width: 100%;
-            margin-bottom: 25px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 12px;
-            border-radius: 14px;
-            box-sizing: border-box;
-            border: 1px solid rgba(255, 153, 0, 0.1);
-        }
-
-        .level-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            margin-bottom: 6px;
-            color: #ffaa00;
-            font-weight: bold;
-        }
-
-        .progress-bar-bg {
-            width: 100%;
-            height: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 153, 0, 0.1);
-        }
-
-        .progress-bar-fill {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, #ff9900, #ffcc00);
-            box-shadow: 0 0 10px rgba(255, 153, 0, 0.5);
-            border-radius: 6px;
-            transition: width 0.3s ease;
-        }
-        .balance-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .currency-icon { font-size: 36px; }
-
-        #balance-display {
-            font-size: 48px;
-            margin: 0;
-            font-weight: 800;
-            color: #ffaa00;
-            text-shadow: 0 0 20px rgba(255, 153, 0, 0.3);
-        }
-
-        .click-button-wrapper {
-            margin: 30px 0;
-        }
-
-        /* Кнопка с янтарно-неоновым свечением */
-        .honey-egg {
-            background: radial-gradient(circle, #ffcc00 0%, #d47a00 100%);
-            font-size: 80px;
-            border: none;
-            width: 190px;
-            height: 190px;
-            border-radius: 50%;
-            cursor: pointer;
-            /* Неоновый свет вокруг пчелы */
-            box-shadow: 0 0 25px rgba(255, 153, 0, 0.6), 
-                        0 0 50px rgba(255, 153, 0, 0.3), 
-                        inset 0 -8px 0 rgba(0,0,0,0.2);
-            transition: transform 0.05s ease, box-shadow 0.1s ease;
-            outline: none;
-        }
-
-        .honey-egg:active {
-            transform: scale(0.93);
-            box-shadow: 0 0 15px rgba(255, 153, 0, 0.8), 
-                        0 0 35px rgba(255, 153, 0, 0.4), 
-                        inset 0 -4px 0 rgba(0,0,0,0.2);
-        }
-
-        h3 {
-            font-size: 17px;
-            margin-bottom: 12px;
-            color: #ffaa00;
-        }
-
-        .shop-section, .airdrop-section {
-            background: rgba(0, 0, 0, 0.15);
-            border-radius: 16px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid rgba(255, 153, 0, 0.1);
-        }
-
-        .shop-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .shop-item {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .shop-item:hover {
-            background: rgba(255, 153, 0, 0.07);
-            border-color: rgba(255, 153, 0, 0.2);
-        }
-
-        .shop-item h4 { margin: 0 0 4px 0; font-size: 14px; }
-        .shop-item p { margin: 0 0 8px 0; font-size: 12px; color: #b5b5b5; }
-        .price { font-size: 13px; font-weight: bold; color: #ffaa00; }
-        .airdrop-section { text-align: center; }
-        .airdrop-section p { font-size: 13px; color: #b5b5b5; margin-bottom: 12px; }
-        #ton-connect-button { display: inline-block; margin-bottom: 8px; }
-        #wallet-status { font-size: 13px; font-weight: bold; margin-top: 4px; }
-        .status-success { color: #4cd964; }
-        .status-error { color: #ff3b30; }
-        
-        /* Экран блокировки вне Telegram */
-        #auth-error-screen {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #120b07;
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 30px;
-            box-sizing: border-box;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Заглушка, если симуляция отключена и вход выполнен с ПК -->
-    <div id="auth-error-screen">
-        <div>
-            <span style="font-size: 64px;">🐝</span>
-            <h2 style="color: #ffaa00;">Пожалуйста, запустите игру через Telegram</h2>
-            <p style="color: #b5b5b5;">Для защиты от взлома вход доступен только из официального мобильного приложения.</p>
-        </div>
-    </div>
-
-    <div class="game-container">
-        <!-- Панель статистики -->
-        <header class="game-header">
-            <div class="stat-box">👆 Клик: +<span id="click-power-display">1</span></div>
-            <div class="stat-box">🐝 Пассив: +<span id="passive-rate-display">60</span>/ч</div>
-        </header>
-
-        <!-- Экран тапа и Лента прохождения уровня -->
-        <main class="main-screen">
-            <div class="level-container">
-                <div class="level-info">
-                    <span id="level-name">Ранг: Личинка (Ур. 1)</span>
-                    <span id="level-fraction">0 / 5000</span>
-                </div>
-                <div class="progress-bar-bg">
-                    <div id="progress-fill" class="progress-bar-fill"></div>
-                </div>
-            </div>
-
-            <div class="balance-container">
-                <span class="currency-icon">🍯</span>
-                <h1 id="balance-display">0</h1>
-            </div>
-
-            <div class="click-button-wrapper">
-                <button id="main-click-button" class="honey-egg">🐝</button>
-            </div>
-        </main>
-
-        <!-- Магазин -->
-        <section class="shop-section">
-            <h3>Развитие Бизнес-Сот 📊</h3>
-            <div class="shop-grid">
-                <div class="shop-item" onclick="buyUpgrade('asic')">
-                    <h4>АСИК Майнинг</h4>
-                    <p>+150 🍯/ч</p>
-                    <span class="price">💰 500</span>
-                </div>
-                <div class="shop-item" onclick="buyUpgrade('ton')">
-                    <!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bee GameFi Hive Clicker</title>
     
-    <!-- ИСПРАВЛЕННЫЕ официальные SDK Telegram и TON Connect -->
     <script src="https://telegram.org"></script>
     <script src="https://unpkg.com"></script>
 
@@ -272,7 +21,6 @@
             user-select: none;
             touch-action: manipulation;
         }
-
         .game-container {
             width: 100%;
             max-width: 450px;
@@ -282,13 +30,11 @@
             display: flex;
             flex-direction: column;
         }
-
         .game-header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 16px;
         }
-
         .stat-box {
             background: rgba(255, 255, 255, 0.04);
             padding: 10px 15px;
@@ -297,7 +43,6 @@
             font-weight: bold;
             border: 1px solid rgba(255, 153, 0, 0.2);
         }
-
         .main-screen {
             text-align: center;
             flex-grow: 1;
@@ -306,7 +51,6 @@
             justify-content: center;
             align-items: center;
         }
-
         .level-container {
             width: 100%;
             margin-bottom: 20px;
@@ -316,7 +60,6 @@
             box-sizing: border-box;
             border: 1px solid rgba(255, 153, 0, 0.1);
         }
-
         .level-info {
             display: flex;
             justify-content: space-between;
@@ -325,7 +68,6 @@
             color: #ffaa00;
             font-weight: bold;
         }
-
         .progress-bar-bg {
             width: 100%;
             height: 12px;
@@ -334,7 +76,6 @@
             overflow: hidden;
             border: 1px solid rgba(255, 153, 0, 0.1);
         }
-
         .progress-bar-fill {
             width: 0%;
             height: 100%;
@@ -343,16 +84,13 @@
             border-radius: 6px;
             transition: width 0.3s ease;
         }
-
         .balance-container {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 10px;
         }
-
         .currency-icon { font-size: 36px; }
-
         #balance-display {
             font-size: 48px;
             margin: 0;
@@ -360,11 +98,7 @@
             color: #ffaa00;
             text-shadow: 0 0 20px rgba(255, 153, 0, 0.3);
         }
-
-        .click-button-wrapper {
-            margin: 20px 0;
-        }
-
+        .click-button-wrapper { margin: 20px 0; }
         .honey-egg {
             background: radial-gradient(circle, #ffcc00 0%, #d47a00 100%);
             font-size: 80px;
@@ -373,21 +107,12 @@
             height: 185px;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 0 25px rgba(255, 153, 0, 0.6), 
-                        0 0 50px rgba(255, 153, 0, 0.3), 
-                        inset 0 -8px 0 rgba(0,0,0,0.2);
+            box-shadow: 0 0 25px rgba(255, 153, 0, 0.6), 0 0 50px rgba(255, 153, 0, 0.3), inset 0 -8px 0 rgba(0,0,0,0.2);
             transition: transform 0.05s ease, box-shadow 0.1s ease;
             outline: none;
             -webkit-tap-highlight-color: transparent;
         }
-
-        .honey-egg:active {
-            transform: scale(0.93);
-            box-shadow: 0 0 15px rgba(255, 153, 0, 0.8), 
-                        0 0 35px rgba(255, 153, 0, 0.4), 
-                        inset 0 -4px 0 rgba(0,0,0,0.2);
-        }
-
+        .honey-egg:active { transform: scale(0.93); }
         .claim-btn {
             width: 100%;
             padding: 12px;
@@ -399,22 +124,9 @@
             cursor: pointer;
             background: linear-gradient(90deg, #ff9900, #ffcc00);
             color: #120b07;
-            transition: opacity 0.2s;
         }
-
-        .claim-btn:disabled {
-            background: rgba(255, 255, 255, 0.08);
-            color: #888;
-            cursor: not-allowed;
-        }
-
-        h3 {
-            font-size: 17px;
-            margin-top: 0;
-            margin-bottom: 12px;
-            color: #ffaa00;
-        }
-
+        .claim-btn:disabled { background: rgba(255, 255, 255, 0.08); color: #888; cursor: not-allowed; }
+        h3 { font-size: 17px; margin-top: 0; margin-bottom: 12px; color: #ffaa00; }
         .shop-section, .airdrop-section {
             background: rgba(0, 0, 0, 0.15);
             border-radius: 16px;
@@ -422,27 +134,8 @@
             margin-bottom: 15px;
             border: 1px solid rgba(255, 153, 0, 0.1);
         }
-
-        .shop-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .shop-item {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .shop-item:active {
-            background: rgba(255, 153, 0, 0.12);
-            border-color: rgba(255, 153, 0, 0.3);
-        }
-
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .shop-item { background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 12px; cursor: pointer; }
         .shop-item h4 { margin: 0 0 4px 0; font-size: 14px; }
         .shop-item p { margin: 0 0 8px 0; font-size: 12px; color: #b5b5b5; }
         .price { font-size: 13px; font-weight: bold; color: #ffaa00; }
@@ -452,23 +145,14 @@
         #wallet-status { font-size: 13px; font-weight: bold; margin-top: 4px; }
         .status-success { color: #4cd964; }
         .status-error { color: #ff3b30; }
-        
         #auth-error-screen {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #120b07;
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 30px;
-            box-sizing: border-box;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #120b07; z-index: 10000; justify-content: center; align-items: center;
+            text-align: center; padding: 30px; box-sizing: border-box;
         }
     </style>
 </head>
 <body>
-
     <div id="auth-error-screen">
         <div>
             <span style="font-size: 64px;">🐝</span>
@@ -489,9 +173,7 @@
                     <span id="level-name">Ранг: Личинка (Ур. 1)</span>
                     <span id="level-fraction">0 / 5000</span>
                 </div>
-                <div class="progress-bar-bg">
-                    <div id="progress-fill" class="progress-bar-fill"></div>
-                </div>
+                <div class="progress-bar-bg"><div id="progress-fill" class="progress-bar-fill"></div></div>
             </div>
 
             <div class="balance-container">
@@ -499,36 +181,17 @@
                 <h1 id="balance-display">0</h1>
             </div>
 
-            <div class="click-button-wrapper">
-                <button id="main-click-button" class="honey-egg">🐝</button>
-            </div>
-
+            <div class="click-button-wrapper"><button id="main-click-button" class="honey-egg">🐝</button></div>
             <button id="claim-passive-btn" class="claim-btn" disabled>⏳ Синхронизация улья...</button>
         </main>
 
         <section class="shop-section">
             <h3>Развитие Бизнес-Сот 📊</h3>
             <div class="shop-grid">
-                <div class="shop-item" onclick="buyUpgrade('asic')">
-                    <h4>АСИК Майнинг</h4>
-                    <p>+150 🍯/ч</p>
-                    <span class="price">💰 500</span>
-                </div>
-                <div class="shop-item" onclick="buyUpgrade('ton')">
-                    <h4>Маркетинг Роя</h4>
-                    <p>+400 🍯/ч</p>
-                    <span class="price">💰 2000</span>
-                </div>
-                <div class="shop-item" onclick="buyUpgrade('quantum')">
-                    <h4>Мульти-Тап</h4>
-                    <p>+1 к клику</p>
-                    <span class="price">💰 200</span>
-                </div>
-                <div class="shop-item" onclick="buyUpgrade('ai')">
-                    <h4>Квантовое Ядро</h4>
-                    <p>+2 к клику</p>
-                    <span class="price">💰 1000</span>
-                </div>
+                <div class="shop-item" onclick="buyUpgrade('asic')"><h4>АСИК Майнинг</h4><p>+150 🍯/ч</p><span class="price">💰 500</span></div>
+                <div class="shop-item" onclick="buyUpgrade('ton')"><h4>Маркетинг Роя</h4><p>+400 🍯/ч</p><span class="price">💰 2000</span></div>
+                <div class="shop-item" onclick="buyUpgrade('quantum')"><h4>Мульти-Тап</h4><p>+1 к клику</p><span class="price">💰 200</span></div>
+                <div class="shop-item" onclick="buyUpgrade('ai')"><h4>Квантовое Ядро</h4><p>+2 к клику</p><span class="price">💰 1000</span></div>
             </div>
         </section>
 
@@ -539,15 +202,13 @@
             <div id="wallet-status" class="status-error">Кошелек не подключен ❌</div>
         </section>
     </div>
+
     <script>
-        const BACKEND_URL = 'https://aaaclickerbackend.onrender.com';
+        const BACKEND_URL = 'https://onrender.com';
         const tg = window.Telegram?.WebApp;
         const initData = tg?.initData;
 
-        let localBalance = 0;
-        let clickPower = 1;
-        let pendingClicks = 0;
-        let clickBatchTimer = null;
+        let localBalance = 0, clickPower = 1, pendingClicks = 0, clickBatchTimer = null;
 
         if (!initData) {
             document.getElementById('auth-error-screen').style.display = 'flex';
@@ -557,19 +218,10 @@
         }
 
         function updateLevelProgressBar(balance) {
-            let rank = "Личинка (Ур. 1)";
-            let maxCoins = 5000;
-            
-            if (balance >= 5000 && balance < 25000) {
-                rank = "Рабочая пчела (Ур. 2)";
-                maxCoins = 25000;
-            } else if (balance >= 25000 && balance < 100000) {
-                rank = "Пчела-Воин (Ур. 3)";
-                maxCoins = 100000;
-            } else if (balance >= 100000) {
-                rank = "Хранитель Улья (Ур. 4)";
-                maxCoins = balance;
-            }
+            let rank = "Личинка (Ур. 1)", maxCoins = 5000;
+            if (balance >= 5000 && balance < 25000) { rank = "Рабочая пчела (Ур. 2)"; maxCoins = 25000; }
+            else if (balance >= 25000 && balance < 100000) { rank = "Пчела-Воин (Ур. 3)"; maxCoins = 100000; }
+            else if (balance >= 100000) { rank = "Хранитель Улья (Ур. 4)"; maxCoins = balance; }
 
             const percentage = maxCoins === balance ? 100 : Math.min((balance / maxCoins) * 100, 100);
             document.getElementById('level-name').innerText = `Ранг: ${rank}`;
@@ -592,7 +244,7 @@
                 });
                 return await response.json();
             } catch (error) {
-                console.error(`Ошибка запроса к ${endpoint}:`, error);
+                console.error(error);
                 return null;
             }
         }
@@ -609,50 +261,35 @@
                 const claimBtn = document.getElementById('claim-passive-btn');
                 if (data.canClaim && data.minedAmount > 0) {
                     claimBtn.disabled = false;
-                    claimBtn.innerText = `🍯 Собрать пассивный доход (+${Math.floor(data.minedAmount)})`;
+                    claimBtn.innerText = `🍯 Собрать пассив (+${Math.floor(data.minedAmount)})`;
                 } else {
                     claimBtn.disabled = true;
-                    const mins = Math.ceil((data.secondsToClaim || 0) / 60);
-                    claimBtn.innerText = `⏳ До сбора пассива: ~${mins} мин.`;
+                    claimBtn.innerText = `⏳ До сбора: ~${Math.ceil((data.secondsToClaim || 0) / 60)} мин.`;
                 }
             }
         }
 
-        // Пакетная отправка кликов на сервер (защита от потери тапов)
         async function flushClicks() {
             if (pendingClicks <= 0) return;
             const countToSend = pendingClicks;
             pendingClicks = 0;
-
             const data = await apiRequest('/api/click', { count: countToSend });
-            if (data && !data.error && pendingClicks === 0) {
-                renderBalance(data.balance);
-            }
+            if (data && !data.error && pendingClicks === 0) renderBalance(data.balance);
         }
 
         function handleTap() {
-            if (tg?.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('light');
-            }
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             renderBalance(localBalance + clickPower);
             pendingClicks += 1;
-
             clearTimeout(clickBatchTimer);
-            if (pendingClicks >= 15) {
-                flushClicks();
-            } else {
-                clickBatchTimer = setTimeout(flushClicks, 400);
-            }
+            if (pendingClicks >= 15) flushClicks();
+            else clickBatchTimer = setTimeout(flushClicks, 400);
         }
 
         async function claimPassive() {
-            const claimBtn = document.getElementById('claim-passive-btn');
-            claimBtn.disabled = true;
+            document.getElementById('claim-passive-btn').disabled = true;
             const data = await apiRequest('/api/claim');
-            if (data && data.success) {
-                renderBalance(data.balance);
-                syncProgress();
-            }
+            if (data && data.success) { renderBalance(data.balance); syncProgress(); }
         }
 
         async function buyUpgrade(itemType) {
@@ -669,20 +306,10 @@
             }
         }
 
-        async function saveWallet(rawAddress) {
-            const data = await apiRequest('/api/wallet/connect', { address: rawAddress });
-            if (data && data.walletAddress) updateWalletStatus(true);
-        }
-
         function updateWalletStatus(isConnected) {
             const statusEl = document.getElementById('wallet-status');
-            if (isConnected) {
-                statusEl.innerText = "Кошелек подключен ✅";
-                statusEl.className = "status-success";
-            } else {
-                statusEl.innerText = "Кошелек не подключен ❌";
-                statusEl.className = "status-error";
-            }
+            statusEl.innerText = isConnected ? "Кошелек подключен ✅" : "Кошелек не подключен ❌";
+            statusEl.className = isConnected ? "status-success" : "status-error";
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -696,26 +323,16 @@
                         manifestUrl: 'https://github.io',
                         buttonRootId: 'ton-connect-button'
                     });
-
-                    tonConnectUI.onStatusChange((wallet) => {
-                        if (wallet && wallet.account) {
-                            saveWallet(wallet.account.address);
-                        } else {
-                            updateWalletStatus(false);
-                        }
+                    tonConnectUI.onStatusChange(async (wallet) => {
+                        if (wallet?.account) {
+                            const res = await apiRequest('/api/wallet/connect', { address: wallet.account.address });
+                            if (res?.walletAddress) updateWalletStatus(true);
+                        } else updateWalletStatus(false);
                     });
-                } catch (tonError) {
-                    console.error("Ошибка TON Connect UI:", tonError);
-                }
+                } catch (e) { console.error(e); }
             }
         });
     </script>
 </body>
 </html>
 
-
-        
-        
-
-    
-       
